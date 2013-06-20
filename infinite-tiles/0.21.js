@@ -50,9 +50,6 @@ var test = (function () {
 		};
 
 		requestAnimationFrame(function raf() {
-			canvas.context.fillStyle = "white";
-			canvas.context.fillRect(0, 0, canvas.width, canvas.height);
-
 			render(canvas, initial, change);
 			canvas.style.webkitTransform = "translate3d(" + canvas.offset.x + "px, " + canvas.offset.y + "px, 0)";
 
@@ -242,80 +239,61 @@ var test = (function () {
 				}
 			}
 
-			// resize
-			if (change.size.dirty) {
-				canvas.width = change.size.x;
-				canvas.height = change.size.y;
-			}
+			if (change.from.dirty || change.size.dirty) {
 
-			// render areas
-			if (
-				(change.from.dirty || change.size.dirty) &&
-				(left.render || right.render || up.render || down.render)
-			) {
-				context.save();
+				// resize
+				if (change.size.dirty) {
+					old_pre(canvas);
 
-				//if (left.render) { console.log("left", left); }
-				//if (right.render) { console.log("right", right); }
-				//if (up.render) { console.log("up", up); }
-				//if (down.render) { console.log("down", down); }
+					canvas.width = change.size.x;
+					canvas.height = change.size.y;
 
-				// move context
-				context.translate(-from.x, -from.y);
+					old_post(canvas, initial);
+				}
 
-				context.fillStyle = "hsl(0,0%,50%)";
+				// render areas
+				if (
+					(change.from.dirty || change.size.dirty) &&
+					(left.render || right.render || up.render || down.render)
+				) {
+					old_pre(canvas);
+					old_post(canvas, initial);
 
-				// render new left/right content
-				if (left.render || right.render) {
+					context.save();
+
+					//if (left.render) { console.log("left", left); }
+					//if (right.render) { console.log("right", right); }
+					//if (up.render) { console.log("up", up); }
+					//if (down.render) { console.log("down", down); }
+
+					// move context
+					context.translate(-from.x, -from.y);
+
+					context.fillStyle = "hsl(0,0%,50%)";
+
 					if (left.render) {
 						context.fillRect(left.from, from.y, left.to - left.from, size.y);
 					}
 					if (right.render) {
 						context.fillRect(right.from, from.y, right.to - right.from, size.y);
 					}
-				}
 
-				// render new up/down content
-				if (up.render || down.render) {
-					horizon.left = left.render ? left.to : from.x;
-					horizon.right = right.render ? right.from : from.x + size.x;
-					horizon.width = horizon.right - horizon.left;
+					// render new up/down content
+					if (up.render || down.render) {
+						horizon.left = left.render ? left.to : from.x;
+						horizon.right = right.render ? right.from : from.x + size.x;
+						horizon.width = horizon.right - horizon.left;
 
-					if (up.render) {
-						context.fillRect(horizon.left, up.from, horizon.width, up.to - up.from);
+						if (up.render) {
+							context.fillRect(horizon.left, up.from, horizon.width, up.to - up.from);
+						}
+						if (down.render) {
+							context.fillRect(horizon.left, down.from, horizon.width, down.to - down.from);
+						}
 					}
-					if (down.render) {
-						context.fillRect(horizon.left, down.from, horizon.width, down.to - down.from);
-					}
+
+					context.restore();
 				}
-
-				context.restore();
-			}
-
-			// render pre-rendered content
-			if (initial.from.x + initial.size.x > from.x) {
-				context.save();
-				{
-					context.translate(
-						(initial.from.x - from.x),
-						(initial.from.y - from.y)
-					);
-					context.scale(initial.size.x, initial.size.y);
-
-					context.fillStyle = "black";
-					context.fillRect(0, 0, 1, 1);
-
-					canvas.context.lineWidth = 0.01;
-					canvas.context.strokeStyle = "white";
-
-					context.beginPath();
-					context.moveTo(0, 0);
-					context.lineTo(1, 1);
-					context.moveTo(1, 0);
-					context.lineTo(0, 1);
-					context.stroke();
-				}
-				context.restore();
 			}
 
 			// reset areas
@@ -338,6 +316,43 @@ var test = (function () {
 
 			return this;
 		}
+
+		function old_pre(canvas) {
+			canvas.context.fillStyle = "white";
+			canvas.context.fillRect(0, 0, canvas.width, canvas.height);
+		}
+
+		function old_post(canvas, initial) {
+			// render pre-rendered content
+			if (
+				(initial.from.x < from.x + size.x) &&
+				(initial.from.x + initial.size.x > from.x)
+			) {
+				context.save();
+				{
+					context.translate(
+						(initial.from.x - from.x),
+						(initial.from.y - from.y)
+					);
+					context.scale(initial.size.x, initial.size.y);
+
+					context.fillStyle = "black";
+					context.fillRect(0, 0, 1, 1);
+
+					//canvas.context.lineWidth = 0.01;
+					//canvas.context.strokeStyle = "white";
+
+					//context.beginPath();
+					//context.moveTo(0, 0);
+					//context.lineTo(1, 1);
+					//context.moveTo(1, 0);
+					//context.lineTo(0, 1);
+					//context.stroke();
+				}
+				context.restore();
+			}
+		}
+
 
 		return render;
 	})();
