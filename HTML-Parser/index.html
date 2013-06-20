@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+		<!--
+			<tag>}} + blah + {{</tag>
+			<tag }} + blah + {{></tag>
+			<tag attr=}} + blah + {{></tag>
+			<tag attr="}} + blah + {{"></tag>
+			<tag attr='}} + blah + {{'></tag>
+			<parent><nested>text }} + blah + {{ text</nested></parent>
+		-->
+        <script id="test" type="text/htjs">
+			<tag>}} + blah + {{</tag>
+			<tag }} + blah + {{></tag>
+			<tag attr=}} + blah + {{></tag>
+			<tag attr="}} + blah + {{"></tag>
+			<tag attr='}} + blah + {{'></tag>
+			<parent><nested>text }} + blah + {{ text</nested></parent>
+		</script>
+		<script type="text/javascript">
+  	var liveHTJS = (function () {
+  		var proxy = document.body.appendChild(document.createElement("proxy"));
+  		var find = /(?:\}\}\s*\+\s*)([\W\w]*?)(?:\s*\+\s*\{\{|$)/g,
+  	        seed, index;
+
+  		function liveHTJS(htjs) {
+  			console.group("parsing");
+  			console.log(htjs);
+  			console.groupEnd();
+
+  			seed = "[htjs-seed-" + Math.random() + "]", index = -1, find.lastIndex = 0;
+
+  			var found = find.exec(htjs), before;
+  			while (found && (found.index != index)) {
+  				before = htjs.substring(0, found.index);
+  				proxy.innerHTML = before + seed + "'\" >";
+
+  				console.log(findRef(proxy));
+
+  				htjs = before + htjs.substring(find.lastIndex);
+  				find.lastIndex = found.index;
+  				index = found.index;
+  				found = find.exec(htjs);
+  			}
+
+  			return "finished";
+  		};
+
+  		function findRef(current) {
+  			if ((current.nodeType === 3) && (current.data.indexOf(seed) !== -1)) {
+  				return current;
+  			}
+  			else if (current.childNodes.length === 0) {
+  				var a = current.attributes.length - 1;
+  				if (current.attributes[a].value.indexOf(seed) !== -1) {
+  					console.log("live attr value");
+  					return current.attributes[a];
+  				}
+  				else {
+  					while (a >= 0) {
+  						if (current.attributes[a].name.indexOf(seed) !== -1) {
+  							console.log("live attr");
+  							return current.attributes[a];
+  						}
+  						a--;
+  					}
+  				}
+  				return current;
+  			}
+
+  			current = current.childNodes[current.childNodes.length - 1];
+  			return findRef(current);
+  		}
+
+  		return liveHTJS;
+  	})();
+
+  	console.log(liveHTJS(document.getElementById("test").innerHTML));
+
+  	//console.log(liveHTJS("}} + this.heading + {{ }} + this.alt + {{"));
+		</script>
+    </body>
+</html>

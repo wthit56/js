@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+		<code type="text/javascript" style="display:none;">
+			function (a, b) {
+				true, false, 1, "\"'string", '\'"string', null, undefined, {};
+
+				// single-line comment
+
+				if (b) { debugger; }
+				else if (b instanceof Object) { }
+				else { }
+
+				/*
+					multi-line comment
+				*/
+
+				var c = { value: null };
+
+				delete c.value;
+
+				if (value in c) { throw new Error(\"found value after deleted\"); }
+
+				switch (a) {
+					case "a": c.value = 1; break;
+					default: c.value = 0;
+				}
+
+				c.value = new Number(c.value);
+
+				while (true) {
+					break;
+				}
+
+				do { console.log(window); break; }
+				while (window);
+
+				try {
+					for (var i = 0; true; i++) {
+						if (i < 10) { continue; }
+					}
+				}
+				catch (error) { }
+				finally {
+					return typeof c.value;
+				}
+
+				with (c) {
+					return void(0);
+				}
+			}
+		</code>
+        
+		<style type="text/css">
+			body {line-height:1.2em;}
+  			code {white-space:pre; tab-size:4; font-size:14px;}
+			code.block {display:block;}
+			
+			code .comment {color:#008800;}
+			code .comment .left, code.block .comment .right {color:#008800;}
+			code .comment .content {font-style:italic;}
+	  
+			code .string {color:rgb(190, 0, 0);}
+			code .string .left, code .string .right {}
+			code .string .content {}
+	  
+			code .keyword {color:#0000FF;}
+	  
+			code .block {background:#EEEEEE;}
+			code .block .block-left, code .block .block-right {}
+			code .block .block-content {}
+
+			code .brackets {background:#EEEEEE;}
+			code .brackets .brackets-left, code .brackets .brackets-right {}
+			code .brackets .brackets-content {}
+	  
+			code .boolean {font-style:italic;}
+		</style>
+
+		<code id="test1" class="block" type="text/javascript">
+			"use strict"; // single-line comment "string"
+			"
+				string//commented\
+			";
+			/*
+				multi-line comment "string"
+				// ---
+			*/
+
+			var a, b, c; let d, e, f;
+
+			if(false){1;}
+			else if(false){2;}
+			else {3;}
+
+			1 == 1
+			1 != 1
+			1 === 1
+			1 !== 1
+
+			1 < 1
+			1 <= 1
+			1 > 1
+			1 >= 1
+
+			1 && 1
+			1 || 1
+			!(false)
+			
+			true, false
+			
+			1 + 1 - 1 * 1 / 1 % 1
+			+= -= *= /= %=
+			<<= >>= >>>=
+			&= ^= |=
+			=
+			& | ^ ~ << >> >>>
+			condition ? true : false
+			[1, 2]
+
+			object.property
+			0.1
+			object[property]
+
+			/regexp\/pattern/gmyi
+
+			0x1234567890
+			1234567890
+			1234567890.0987654321
+		</code>
+
+		<script src="Replacer.js" type="text/javascript"></script>
+		<script src=".js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	var source = document.getElementById("test1");
+  	source.input = source.innerText;
+
+  	source.innerHTML = SYX(source.innerText, source.getAttribute("type"));
+		</script>
+    </body>
+</html>

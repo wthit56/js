@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>HTJS</title>
+		<style type="text/css">
+  	.parse {
+  	
+  	}
+  	.parse h1 {
+  		border-bottom: 1px solid #000000;
+		  margin: 5px 0 0 0;
+  	}
+  	.parse pre {
+		margin: 0;
+		width: 50%;
+		float: left;
+		overflow: auto;
+		padding: 5px;
+		box-sizing: border-box;
+		tab-size: 4;
+  	}
+  	.parse pre.source {
+		  border-right: 1px solid #000000;
+  	}
+  	.parse:after {
+		content: ""; display: block; clear: both;
+  	}
+		</style>
+    </head>
+    <body>
+		<em>Open the console to see the debugging output.</em>
+		<script src=".js" type="text/javascript"></script>
+        <script type="text/htjs" id="htjs_template">
+			<!doctype html>
+			<h1>}} + heading + " " + (1/2) + {{</h1>}} + {{
+		<img src="" />
+			<p class="first">
+				{{ content \ whatever }}
+			</p>
+		</script>
+		<script type="text/htjs" id="htjs_object">
+			return {
+				heading: {{awww }} + "yeah!",
+				body: "blah" + {{
+					Once upon a time
+					There was this guy
+					He was all {{awesome}} and whatever
+					The end
+				}}
+			};
+		</script>
+
+        <script type="text/javascript">
+			var parse = (function () {
+				var Template = document.createElement("DIV");
+				Template.className = "parse";
+				Template.appendChild(document.createElement("H1"));
+				Template.appendChild(document.createElement("PRE")).className = "source";
+				Template.appendChild(document.createElement("PRE")).className = "converted";
+
+				return function parse(name, input) {
+					var HTML = Template.cloneNode(true);
+					HTML.childNodes[0].innerText = name;
+					HTML.childNodes[1].innerText = input;
+
+					console.groupCollapsed(name);
+					HTML.childNodes[2].innerText = HTJS(input, true);
+					console.groupEnd();
+
+					document.body.appendChild(HTML);
+				};
+			})();
+
+
+
+			parse("Template", document.getElementById("htjs_template").innerHTML);
+			parse("Object", document.getElementById("htjs_object").innerHTML);
+		</script>
+    </body>
+</html>
+
+
