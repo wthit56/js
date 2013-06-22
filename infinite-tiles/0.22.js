@@ -17,7 +17,8 @@ var TileBuffer = (function () {
 		this.view = {
 			_dirty: {
 				from: { x: 0, y: 0 },
-				size: { x: 0, y: 0 }
+				size: { x: 0, y: 0 },
+				offset: { x: 0, y: 0 }
 			},
 
 			from: {
@@ -30,7 +31,10 @@ var TileBuffer = (function () {
 				dirty: null
 			},
 
-			offset: { x: 0, y: 0 }
+			offset: {
+				x: 0, y: 0,
+				dirty: null
+			}
 		};
 	}
 	TileBuffer.prototype = {
@@ -149,6 +153,10 @@ var TileBuffer = (function () {
 					size1.x = fixSize(size1.x, tileSize);
 					size1.y = fixSize(size1.y, tileSize);
 
+					// clip size to map size
+					if (size1.x > map.width) { size1.x = map.width; }
+					if (size1.y > map.height) { size1.y = map.height; }
+
 					// size has not changed
 					if (
 						(size1.x == size0.x) &&
@@ -159,29 +167,45 @@ var TileBuffer = (function () {
 					}
 					// size has changed
 					else {
-						// re-calculate maximum x and y
-						fromMax.x = map.width - size1.x;
-						fromMax.y = map.height - size1.y;
-
 						// from not changed
 						if (!from1) {
 							from1 = from0.dirty = from =
 								this.view._dirty.from;
-							from1.x = from0.x - offset.x;
-							from1.y = from0.y - offset.y;
+							from1.x = fromMax.x - offset.x;
+							from1.y = fromMax.y - offset.y;
+							console.log("from0.y:", from0.y);
+							console.log("offset.y:", offset.y);
+							console.log("from1.y:", from1.y);
 						}
+
+						// re-calculate maximum x and y
+						fromMax.x = map.width - size1.x;
+						fromMax.y = map.height - size1.y;
 					}
 				}
 
 				// from is dirty
 				if (from1) {
+					offset.dirty = view._dirty.offset;
+
 					fix = fixFrom(from1.x, fromMax.x, tileSize);
 					from1.x = fix.value;
-					offset.x = fix.offset;
+					offset.dirty.x = fix.offset;
 
 					fix = fixFrom(from1.y, fromMax.y, tileSize);
 					from1.y = fix.value;
-					offset.y = fix.offset;
+					offset.dirty.y = fix.offset;
+
+					if (
+						(offset.dirty.x == offset.x) &&
+						(offset.dirty.y == offset.y)
+					) {
+						offset.dirty = null;
+					}
+					else {
+						offset.x = offset.dirty.x;
+						offset.y = offset.dirty.y;
+					}
 
 					if ((from1.x == from0.x) && (from1.y == from0.x)) {
 						from1 = from0.dirty = null;
@@ -360,23 +384,55 @@ function test(label, initial, change) {
 	buffer.moveTo(initial.from.x, initial.from.y);
 	buffer.render();
 
-	if (change.size) {
-		buffer.resize(change.size.x, change.size.y);
+	for (var i = 2; i < arguments.length; i++) {
+		var change = arguments[i];
+		if (change.size) {
+			buffer.resize(change.size.x, change.size.y);
+		}
+		if (change.from) {
+			buffer.moveTo(change.from.x, change.from.y);
+		}
+		buffer.render();
 	}
-	if (change.from) {
-		buffer.moveTo(change.from.x, change.from.y);
-	}
-	buffer.render();
 
 	var offset = buffer.view.offset;
 	if (offset) {
-		info.innerHTML += "<br/>(" + change.from.x + ", " + change.from.y + ") &gt; (" + offset.x + ", " + offset.y + ")";
+		var from = change.from || initial.from;
+		info.innerHTML += "<br/>(" + from.x + ", " + from.y + ") &gt; (" + offset.x + ", " + offset.y + ")";
 	}
 
 	return buffer;
 }
 
 window[AEL]("load", function () {
+	console.group("initial");
+	var b = test("Map too small, top clipped",
+		{ from: { x: 0, y: 51 }, size: { x: 300, y: 250} },
+		{ size: { x: 300, y: 150} },
+		{ size: { x: 300, y: 250} },
+		{ size: { x: 300, y: 200} },
+		{ size: { x: 300, y: 250} },
+		{ size: { x: 300, y: 200} },
+		{ size: { x: 300, y: 250} },
+		{ size: { x: 300, y: 200} }
+	);
+	console.groupEnd();
+
+	console.group("max - 2 tiles"); b.resize(300, 150); b.render(); console.groupEnd();
+	console.group("max"); b.resize(300, 250); b.render(); console.groupEnd();
+	console.group("max - 1 tile"); b.resize(300, 200); b.render(); console.groupEnd();
+	console.group("max"); b.resize(300, 250); b.render(); console.groupEnd();
+	console.group("max - 1 tile"); b.resize(300, 200); b.render(); console.groupEnd();
+	console.group("max"); b.resize(300, 250); b.render(); console.groupEnd();
+	console.group("max - 1 tile"); b.resize(300, 200); b.render(); console.groupEnd();
+	console.group("max"); b.resize(300, 250); b.render(); console.groupEnd();
+	console.group("max - 1 tile"); b.resize(300, 200); b.render(); console.groupEnd();
+
+	test("Map too small",
+		{ from: { x: -50, y: -50 }, size: { x: 400, y: 400} },
+		{}
+	);
+
 	test("Covered Bottom",
 		{ from: { x: 0, y: 0 }, size: { x: 0, y: 0} },
 		{ from: { x: 0, y: 50 }, size: { x: 50, y: 50} }

@@ -153,6 +153,10 @@ var TileBuffer = (function () {
 					size1.x = fixSize(size1.x, tileSize);
 					size1.y = fixSize(size1.y, tileSize);
 
+					// clip size to map size
+					if (size1.x > map.width) { size1.x = map.width; }
+					if (size1.y > map.height) { size1.y = map.height; }
+
 					// size has not changed
 					if (
 						(size1.x == size0.x) &&
@@ -163,17 +167,29 @@ var TileBuffer = (function () {
 					}
 					// size has changed
 					else {
-						// re-calculate maximum x and y
-						fromMax.x = map.width - size1.x;
-						fromMax.y = map.height - size1.y;
-
 						// from not changed
 						if (!from1) {
 							from1 = from0.dirty = from =
 								this.view._dirty.from;
+
+							if (from0.y > fromMax.y) {
+								//console.log("y (" + from0.y + ") > max (" + fromMax.y + ")");
+							}
+
+							//if (from0.x >= fromMax.x) { from1.x = fromMax.x - offset.x; }
+							//else { from1.x = from0.x - offset.x; }
+							//if (from0.y >= fromMax.y) { from1.y = fromMax.y - offset.y; }
+							//else { from1.y = from0.y - offset.y; }
+
 							from1.x = from0.x - offset.x;
 							from1.y = from0.y - offset.y;
+
+							console.log("from changed to " + from1.y);
 						}
+
+						// re-calculate maximum x and y
+						fromMax.x = map.width - size1.x;
+						fromMax.y = map.height - size1.y;
 					}
 				}
 
@@ -187,20 +203,29 @@ var TileBuffer = (function () {
 
 					fix = fixFrom(from1.y, fromMax.y, tileSize);
 					from1.y = fix.value;
+					console.log("from fixed to " + from1.y);
 					offset.dirty.y = fix.offset;
 
-					if ((offset.dirty.x == offset.x) && (offset.dirty.y == offset.y)) {
+					if (
+						(offset.dirty.x == offset.x) &&
+						(offset.dirty.y == offset.y)
+					) {
 						offset.dirty = null;
 					}
 					else {
 						offset.x = offset.dirty.x;
 						offset.y = offset.dirty.y;
+						console.log("offset changed to " + offset.y);
 					}
 
 					if ((from1.x == from0.x) && (from1.y == from0.x)) {
 						from1 = from0.dirty = null;
 						from = from0;
 					}
+				}
+
+				if (from1 || size1 || offset.dirty) {
+					//console.log("from:", from, "size:", size, "offset:", offset);
 				}
 
 				if (from1 || size1) {
@@ -296,11 +321,10 @@ var TileBuffer = (function () {
 			}
 
 			var fixFrom = (function () {
-				var result = { value: 0, offset: 0 };
+				var result = { value: 0, offset: 0 },
+					offset;
 
 				return function fixFrom(value, max, tileSize) {
-					var offset = 0;
-
 					if (value < 0) {
 						offset = -value;
 						value = 0;
@@ -336,12 +360,6 @@ function importScript(src, type) {
 	script.type = type || "text/javascript";
 	document.head.appendChild(script);
 }
-
-var AEL = (
-	window.addEventListener ? "addEventListener" :
-	window.attachEvent ? "attachEvent" :
-	""
-);
 
 var Transformer = (function () {
 	var global = this;
@@ -422,13 +440,26 @@ var Transformer = (function () {
 })();
 
 
+var eventTarget = {
+	add: (
+		window.addEventListener ? "addEventListener" :
+		window.attachEvent ? "attachEvent" :
+		""
+	),
+	remove: (
+		window.removeEventListener ? "removeEventListener" :
+		window.detachEvent ? "detachEvent" :
+		""
+	)
+};
+
 importScript("http://192.168.0.9:45917/shims/raf-caf.js");
 
 document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
 	body {margin:0;}\
 	\
 	#container {position:relative; float:left;}\
-	#container #port {overflow:hidden;}\
+	#container #port {overflow:hidden; border:2px solid hsl(0,0%,85%);}\
 	#container #port canvas {box-shadow:0 0 5px hsl(0,0%,50%); background:hsl(0,0%,85%);}\
 	#container #resize {\
 		display:block; cursor:nwse-resize;\
@@ -437,7 +468,7 @@ document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
 	}\
 ";
 
-window[AEL]("load", function () {
+window[eventTarget.add]("load", function () {
 	document.body.innerHTML = '\
 		<div id="container">\
 			<div id="port"></div>\
@@ -445,7 +476,26 @@ window[AEL]("load", function () {
 		</div>\
 	';
 
-	var buffer = window.buffer=new TileBuffer({
+	var port = document.getElementById("port");
+	port.view = {
+		camera: {
+			x: 0, y: 0,
+			update: function () {
+				buffer.moveTo(this.x, this.y);
+			}
+		},
+		size: {
+			x: 480, y: 320,
+			update: function () {
+				buffer.resize(this.x, this.y);
+
+				port.style.width = this.x + "px";
+				port.style.height = this.y + "px";
+			}
+		}
+	};
+
+	var buffer = window.buffer = new TileBuffer({
 		background: "white",
 		tiles: {
 			render: function (context, x, y) { },
@@ -456,23 +506,101 @@ window[AEL]("load", function () {
 	if (Transformer.has3d) {
 		buffer.canvas.style[Transformer.cssProperty] = "translateZ(0)";
 	}
-	document.getElementById("port").appendChild(buffer.canvas);
+	port.appendChild(buffer.canvas);
+	port.view.size.update();
 
-	var offsetTransform = new Transformer(true);
+	buffer.resize(480, 320); buffer.moveTo(0, 51); buffer.render();
+	//buffer.resize(buffer.map.height - (buffer.map.tiles.size * 2)); debugger; buffer.render();
 
-	requestAnimationFrame(function raf() {
-		buffer.render();
+	(function () { // controls
+		var action = { none: 0, move: 1, resize: 2 };
+		var state = {
+			x: 0, y: 0,
+			action: action.none
+		};
 
-		var offset = buffer.view.offset;
-		if (offset.dirty) {
-			offsetTransform
-				.reset()
-				.translate(offset.x, offset.y)
-				.apply(buffer.canvas.style);
+		document.getElementById("resize")[eventTarget.add]("mousedown", function (e) {
+			if (!e) { e = window.event; }
 
-			offset.dirty = null;
-		}
+			state.x = e.pageX;
+			state.y = e.pageY;
 
-		requestAnimationFrame(raf);
-	});
+			state.action = action.resize;
+
+			window[eventTarget.add]("mousemove", mousemove);
+
+			e.preventDefault();
+		});
+
+		port[eventTarget.add]("mousedown", function (e) {
+			if (!e) { e = window.event; }
+
+			state.x = e.pageX;
+			state.y = e.pageY;
+
+			state.action = action.move;
+
+			window[eventTarget.add]("mousemove", mousemove);
+
+			e.preventDefault();
+		});
+
+		var mousemove = (function () {
+			var x = y = 0;
+			var view = port.view;
+
+			return function mousemove(e) {
+				if (!state.action) { return; }
+				if (!e) { e = window.event; }
+
+				x = e.pageX; y = e.pageY;
+				switch (state.action) {
+					case action.resize:
+						view.size.x += x - state.x;
+						view.size.y += y - state.y;
+						view.size.update();
+						break;
+					case action.move:
+						view.camera.x -= (x - state.x);
+						view.camera.y -= (y - state.y);
+						view.camera.update();
+						break;
+				}
+
+				state.x = x; state.y = y;
+
+				e.preventDefault();
+			}
+		})();
+
+		window[eventTarget.add]("mouseup", function (e) {
+			if (!state.action) { return; }
+			if (!e) { e = window.event; }
+
+			state.action = action.none;
+
+			window[eventTarget.remove]("mousemove", mousemove);
+
+			e.preventDefault();
+		});
+	})();
+
+
+	var offset = buffer.view.offset,
+		offsetTransform = new Transformer(true);
+
+	//requestAnimationFrame(function raf() {
+	//	buffer.render();
+
+	//	if (offset.dirty) {
+	//		offsetTransform
+	//			.reset()
+	//			.translate(offset.x, offset.y)
+	//			.apply(buffer.canvas.style);
+
+	//		offset.dirty = null;
+	//	}
+
+	//	requestAnimationFrame(raf);
+	//});
 });
