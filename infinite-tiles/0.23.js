@@ -17,7 +17,8 @@ var TileBuffer = (function () {
 		this.view = {
 			_dirty: {
 				from: { x: 0, y: 0 },
-				size: { x: 0, y: 0 }
+				size: { x: 0, y: 0 },
+				offset: { x: 0, y: 0 }
 			},
 
 			from: {
@@ -30,7 +31,10 @@ var TileBuffer = (function () {
 				dirty: null
 			},
 
-			offset: { x: 0, y: 0 }
+			offset: {
+				x: 0, y: 0,
+				dirty: null
+			}
 		};
 	}
 	TileBuffer.prototype = {
@@ -175,13 +179,23 @@ var TileBuffer = (function () {
 
 				// from is dirty
 				if (from1) {
+					offset.dirty = view._dirty.offset;
+
 					fix = fixFrom(from1.x, fromMax.x, tileSize);
 					from1.x = fix.value;
-					offset.x = fix.offset;
+					offset.dirty.x = fix.offset;
 
 					fix = fixFrom(from1.y, fromMax.y, tileSize);
 					from1.y = fix.value;
-					offset.y = fix.offset;
+					offset.dirty.y = fix.offset;
+
+					if ((offset.dirty.x == offset.x) && (offset.dirty.y == offset.y)) {
+						offset.dirty = null;
+					}
+					else {
+						offset.x = offset.dirty.x;
+						offset.y = offset.dirty.y;
+					}
 
 					if ((from1.x == from0.x) && (from1.y == from0.x)) {
 						from1 = from0.dirty = null;
@@ -316,18 +330,12 @@ var TileBuffer = (function () {
 	return TileBuffer;
 })();
 
-
-document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
-	body {margin:5px; font-family:sans-serif; line-height:1.4;}\
-	\
-	.container {\
-		float:left; padding:5px; margin:5px;\
-		box-shadow:0 0 5px hsl(0,0%,50%);\
-		text-align:center;\
-	}\
-	.container span {display:block;}\
-	.container canvas {background:hsl(0,0%,85%); border:2px solid hsl(0,0%,85%);}\
-	";
+function importScript(src, type) {
+	var script = document.createElement("SCRIPT");
+	script.src = src;
+	script.type = type || "text/javascript";
+	document.head.appendChild(script);
+}
 
 var AEL = (
 	window.addEventListener ? "addEventListener" :
@@ -335,72 +343,136 @@ var AEL = (
 	""
 );
 
-var map = {
-	background: "white",
-	tiles: {
-		render: function (context, x, y) { },
-		size: 50
-	},
-	width: 300, height: 300
-};
+var Transformer = (function () {
+	var global = this;
+	
+	var clean = [];
 
-function test(label, initial, change) {
-	var buffer = new TileBuffer(map);
-	buffer._showEfficiency = 10;
+	function Transformer(force3d) {
+		if (clean.length > 0) {
+			var _ = clean.pop();
+			Transformer.apply(_, arguments);
+			return _;
+		}
+		else if (this === global) {
+			return Transformer.apply({ constructor: Transformer }, arguments);
+		}
 
-	var container = document.createElement("DIV");
-	container.className = "container";
-	var info = container.appendChild(document.createElement("SPAN"));
-	info.innerHTML = label;
-
-	container.appendChild(buffer.canvas);
-	document.body.appendChild(container);
-
-	buffer.resize(initial.size.x, initial.size.y);
-	buffer.moveTo(initial.from.x, initial.from.y);
-	buffer.render();
-
-	if (change.size) {
-		buffer.resize(change.size.x, change.size.y);
+		this.force3d = (force3d != null ? force3d : true);
+		this.transform = "";
 	}
-	if (change.from) {
-		buffer.moveTo(change.from.x, change.from.y);
-	}
-	buffer.render();
+	Transformer.prototype = {
+		force3d: true,
 
-	var offset = buffer.view.offset;
-	if (offset) {
-		info.innerHTML += "<br/>(" + change.from.x + ", " + change.from.y + ") &gt; (" + offset.x + ", " + offset.y + ")";
-	}
+		string: "",
+		toString: function () {
+			return this.transform;
+		},
 
-	return buffer;
-}
+		translate: function (x, y, z) {
+			this.string += "" +
+				"translate" + (Transformer.has3d ? "3d" : "") +
+				"(" +
+					 x + "px," + y + "px" +
+					(Transformer.has3d ?
+						(
+							z != null ? "px," + z :
+							this.force3d ? ",0" :
+							""
+						) :
+						""
+					) +
+				")" +
+			"";
+
+			return this;
+		},
+
+		apply: function (style) {
+			style[Transformer.cssProperty] = this.string;
+			return this;
+		},
+		reset: function () {
+			this.string = "";
+			return this;
+		},
+		destroy: function () {
+			this.reset();
+			clean.push(this);
+		}
+	};
+
+	var style = document.createElement("test").style;
+	Transformer.cssProperty = (
+		(style["transform"] != null) ? "transform" :
+		(style["-webkit-transform"] != null) ? "-webkit-transform" :
+		(style["-moz-transform"] != null) ? "-moz-transform" :
+		(style["-ms-transform"] != null) ? "-ms-transform" :
+		(style["-o-transform"] != null) ? "-o-transform" :
+		""
+	);
+	style = null;
+
+	Transformer.has3d = (
+		window.matchMedia &&
+		window.matchMedia("(" + Transformer.cssProperty + "-3d)").matches
+	);
+
+	return Transformer;
+})();
+
+
+importScript("http://192.168.0.9:45917/shims/raf-caf.js");
+
+document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
+	body {margin:0;}\
+	\
+	#container {position:relative; float:left;}\
+	#container #port {overflow:hidden;}\
+	#container #port canvas {box-shadow:0 0 5px hsl(0,0%,50%); background:hsl(0,0%,85%);}\
+	#container #resize {\
+		display:block; cursor:nwse-resize;\
+		position:absolute; bottom:-20px; right:-20px;\
+		width:20px; height:20px; background:hsl(0,0%,50%);\
+	}\
+";
 
 window[AEL]("load", function () {
-	test("Covered Bottom",
-		{ from: { x: 0, y: 0 }, size: { x: 0, y: 0} },
-		{ from: { x: 0, y: 50 }, size: { x: 50, y: 50} }
-	);
-	test("Covered Right",
-		{ from: { x: 0, y: 0 }, size: { x: 0, y: 0} },
-		{ from: { x: 50, y: 0 }, size: { x: 50, y: 50} }
-	);
+	document.body.innerHTML = '\
+		<div id="container">\
+			<div id="port"></div>\
+			<span id="resize"></span>\
+		</div>\
+	';
 
-	test("Zoom out",
-		{ from: { x: 100, y: 100 }, size: { x: 0, y: 0} },
-		{ from: { x: 50, y: 50 }, size: { x: 100, y: 100} }
-	);
-	test("Zoom in",
-		{ from: { x: 50, y: 50 }, size: { x: 100, y: 100} },
-		{ from: { x: 100, y: 100 }, size: { x: 0, y: 0} }
-	);
+	var buffer = window.buffer=new TileBuffer({
+		background: "white",
+		tiles: {
+			render: function (context, x, y) { },
+			size: 50
+		},
+		width: 300, height: 300
+	});
+	if (Transformer.has3d) {
+		buffer.canvas.style[Transformer.cssProperty] = "translateZ(0)";
+	}
+	document.getElementById("port").appendChild(buffer.canvas);
 
-	test("Top left",
-		{ from: { x: 100, y: 100 }, size: { x: 0, y: 0} },
-		{ from: { x: -55, y: -55} }
-	);
-	test("Bottom right",
-		{ from: { x: 100, y: 100 }, size: { x: 0, y: 0} },
-		{ from: { x: 305, y: 305} }
-	);
+	var offsetTransform = new Transformer(true);
+
+	requestAnimationFrame(function raf() {
+		buffer.render();
+
+		var offset = buffer.view.offset;
+		if (offset.dirty) {
+			offsetTransform
+				.reset()
+				.translate(offset.x, offset.y)
+				.apply(buffer.canvas.style);
+
+			offset.dirty = null;
+		}
+
+		requestAnimationFrame(raf);
+	});
 });
