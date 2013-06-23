@@ -1,4 +1,4 @@
-// data:text/html;ascii,<script src="http://localhost:45917/infinite-tiles/0.22.js"></script>
+// data:text/html;ascii,<script src="http://localhost:45917/infinite-tiles/0.23.js"></script>
 
 var TileBuffer = (function () {
 	(function () {
@@ -154,8 +154,12 @@ var TileBuffer = (function () {
 					size1.y = fixSize(size1.y, tileSize);
 
 					// clip size to map size
-					if (size1.x > map.width) { size1.x = map.width; }
-					if (size1.y > map.height) { size1.y = map.height; }
+					if (size1.x >= map.width) {
+						size1.x = map.width;
+					}
+					if (size1.y >= map.height) {
+						size1.y = map.height;
+					}
 
 					// size has not changed
 					if (
@@ -171,22 +175,9 @@ var TileBuffer = (function () {
 						if (!from1) {
 							from1 = from0.dirty = from =
 								this.view._dirty.from;
-
-							if (from0.y > fromMax.y) {
-								//console.log("y (" + from0.y + ") > max (" + fromMax.y + ")");
-							}
-
-							//if (from0.x >= fromMax.x) { from1.x = fromMax.x - offset.x; }
-							//else { from1.x = from0.x - offset.x; }
-							//if (from0.y >= fromMax.y) { from1.y = fromMax.y - offset.y; }
-							//else { from1.y = from0.y - offset.y; }
-
 							from1.x = from0.x - offset.x;
 							from1.y = from0.y - offset.y;
-
-							console.log("from changed to " + from1.y);
 						}
-
 						// re-calculate maximum x and y
 						fromMax.x = map.width - size1.x;
 						fromMax.y = map.height - size1.y;
@@ -201,31 +192,25 @@ var TileBuffer = (function () {
 					from1.x = fix.value;
 					offset.dirty.x = fix.offset;
 
-					fix = fixFrom(from1.y, fromMax.y, tileSize);
+					fix = fixFrom(from1.y, fromMax.y, tileSize, offset.y, "y");
 					from1.y = fix.value;
-					console.log("from fixed to " + from1.y);
 					offset.dirty.y = fix.offset;
 
 					if (
-						(offset.dirty.x == offset.x) &&
-						(offset.dirty.y == offset.y)
+						(offset.dirty.x != offset.x) ||
+						(offset.dirty.y != offset.y)
 					) {
-						offset.dirty = null;
-					}
-					else {
 						offset.x = offset.dirty.x;
 						offset.y = offset.dirty.y;
-						console.log("offset changed to " + offset.y);
+					}
+					else {
+						offset.dirty = null;
 					}
 
-					if ((from1.x == from0.x) && (from1.y == from0.x)) {
+					if ((from1.x == from0.x) && (from1.y == from0.y)) {
 						from1 = from0.dirty = null;
 						from = from0;
 					}
-				}
-
-				if (from1 || size1 || offset.dirty) {
-					//console.log("from:", from, "size:", size, "offset:", offset);
 				}
 
 				if (from1 || size1) {
@@ -310,19 +295,23 @@ var TileBuffer = (function () {
 				}
 			}
 
-			function fixSize(value, tileSize) {
-				var r = value % tileSize;
-				value = value + tileSize;
-				if (r != 0) {
-					value += tileSize - r;
-				}
+			var fixSize = (function () {
+				var r;
 
-				return value;
-			}
+				return function fixSize(value, tileSize) {
+					r = value % tileSize;
+					value = value + tileSize;
+					if (r != 0) {
+						value += tileSize - r;
+					}
+
+					return value;
+				};
+			})();
 
 			var fixFrom = (function () {
 				var result = { value: 0, offset: 0 },
-					offset;
+					offset = 0;
 
 				return function fixFrom(value, max, tileSize) {
 					if (value < 0) {
@@ -361,82 +350,35 @@ function importScript(src, type) {
 	document.head.appendChild(script);
 }
 
-var Transformer = (function () {
-	var global = this;
-	
-	var clean = [];
-
-	function Transformer(force3d) {
-		if (clean.length > 0) {
-			var _ = clean.pop();
-			Transformer.apply(_, arguments);
-			return _;
-		}
-		else if (this === global) {
-			return Transformer.apply({ constructor: Transformer }, arguments);
-		}
-
-		this.force3d = (force3d != null ? force3d : true);
-		this.transform = "";
-	}
-	Transformer.prototype = {
-		force3d: true,
-
-		string: "",
-		toString: function () {
-			return this.transform;
-		},
-
-		translate: function (x, y, z) {
-			this.string += "" +
-				"translate" + (Transformer.has3d ? "3d" : "") +
-				"(" +
-					 x + "px," + y + "px" +
-					(Transformer.has3d ?
-						(
-							z != null ? "px," + z :
-							this.force3d ? ",0" :
-							""
-						) :
-						""
-					) +
-				")" +
-			"";
-
-			return this;
-		},
-
-		apply: function (style) {
-			style[Transformer.cssProperty] = this.string;
-			return this;
-		},
-		reset: function () {
-			this.string = "";
-			return this;
-		},
-		destroy: function () {
-			this.reset();
-			clean.push(this);
-		}
-	};
-
-	var style = document.createElement("test").style;
-	Transformer.cssProperty = (
-		(style["transform"] != null) ? "transform" :
-		(style["-webkit-transform"] != null) ? "-webkit-transform" :
-		(style["-moz-transform"] != null) ? "-moz-transform" :
-		(style["-ms-transform"] != null) ? "-ms-transform" :
-		(style["-o-transform"] != null) ? "-o-transform" :
-		""
+var position = (function () {
+	var style = document.createElement("_").style;
+	var transform = (
+			(style["transform"] != null) ? "transform" :
+			(style["-webkit-transform"] != null) ? "-webkit-transform" :
+			(style["-moz-transform"] != null) ? "-moz-transform" :
+			(style["-ms-transform"] != null) ? "-ms-transform" :
+			(style["-o-transform"] != null) ? "-o-transform" :
+			""
 	);
 	style = null;
 
-	Transformer.has3d = (
-		window.matchMedia &&
-		window.matchMedia("(" + Transformer.cssProperty + "-3d)").matches
-	);
+	if (transform) {
+		var has3d = (
+			window.matchMedia &&
+			window.matchMedia("(" + transform + "-3d)").matches
+		);
 
-	return Transformer;
+		var template = "translate" + (has3d ? "3d" : "") + "({x}px,{y}px" + (has3d ? ",0" : "") + ")";
+		return function position(style, x, y) {
+			style[transform] = template.replace("{x}", x).replace("{y}", y);
+		};
+	}
+	else {
+		return function (style, x, y) {
+			style.marginLeft = x + "px";
+			style.marginTop = y + "px";
+		}
+	}
 })();
 
 
@@ -456,6 +398,10 @@ var eventTarget = {
 importScript("http://192.168.0.9:45917/shims/raf-caf.js");
 
 document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
+	html{\
+		-webkit-text-size-adjust:100%;\
+		-ms-text-size-adjust:100%;\
+	}\
 	body {margin:0;}\
 	\
 	#container {position:relative; float:left;}\
@@ -463,10 +409,17 @@ document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
 	#container #port canvas {box-shadow:0 0 5px hsl(0,0%,50%); background:hsl(0,0%,85%);}\
 	#container #resize {\
 		display:block; cursor:nwse-resize;\
-		position:absolute; bottom:-20px; right:-20px;\
+		position:absolute; bottom:0px; right:0px;\
 		width:20px; height:20px; background:hsl(0,0%,50%);\
 	}\
 ";
+
+(function () {
+	var meta = document.head.appendChild(document.createElement("META"));
+	meta.name = "viewport";
+	meta.content = "width=device-width, initial-scale=1, maximum-scale=1";
+	//setTimeout(function(){alert(window.innerWidth+" "+window.innerHeight);},1000);
+})();
 
 window[eventTarget.add]("load", function () {
 	document.body.innerHTML = '\
@@ -485,7 +438,7 @@ window[eventTarget.add]("load", function () {
 			}
 		},
 		size: {
-			x: 480, y: 320,
+			x: window.innerWidth-20, y: window.innerHeight-20,
 			update: function () {
 				buffer.resize(this.x, this.y);
 
@@ -501,16 +454,11 @@ window[eventTarget.add]("load", function () {
 			render: function (context, x, y) { },
 			size: 50
 		},
-		width: 300, height: 300
+		width: port.view.size.x*3, height: port.view.size.y*3
 	});
-	if (Transformer.has3d) {
-		buffer.canvas.style[Transformer.cssProperty] = "translateZ(0)";
-	}
+	position(buffer.canvas.style, 0, 0);
 	port.appendChild(buffer.canvas);
 	port.view.size.update();
-
-	buffer.resize(480, 320); buffer.moveTo(0, 51); buffer.render();
-	//buffer.resize(buffer.map.height - (buffer.map.tiles.size * 2)); debugger; buffer.render();
 
 	(function () { // controls
 		var action = { none: 0, move: 1, resize: 2 };
@@ -519,20 +467,10 @@ window[eventTarget.add]("load", function () {
 			action: action.none
 		};
 
-		document.getElementById("resize")[eventTarget.add]("mousedown", function (e) {
-			if (!e) { e = window.event; }
+		var resize = document.getElementById("resize");
+		var hasTouch = ("ontouchstart" in document);
 
-			state.x = e.pageX;
-			state.y = e.pageY;
-
-			state.action = action.resize;
-
-			window[eventTarget.add]("mousemove", mousemove);
-
-			e.preventDefault();
-		});
-
-		port[eventTarget.add]("mousedown", function (e) {
+		function start_move(e) {
 			if (!e) { e = window.event; }
 
 			state.x = e.pageX;
@@ -540,16 +478,29 @@ window[eventTarget.add]("load", function () {
 
 			state.action = action.move;
 
-			window[eventTarget.add]("mousemove", mousemove);
+			drag.add(e);
 
 			e.preventDefault();
-		});
+		}
 
-		var mousemove = (function () {
+		function start_resize(e) {
+			if (!e) { e = window.event; }
+
+			state.x = e.pageX;
+			state.y = e.pageY;
+
+			state.action = action.resize;
+
+			drag.add(e);
+
+			e.preventDefault();
+		}
+
+		var drag = (function () {
 			var x = y = 0;
 			var view = port.view;
 
-			return function mousemove(e) {
+			function drag(e) {
 				if (!state.action) { return; }
 				if (!e) { e = window.event; }
 
@@ -571,36 +522,60 @@ window[eventTarget.add]("load", function () {
 
 				e.preventDefault();
 			}
+
+			drag.add = function (e) {
+				if (hasTouch && (e.type === "touchstart")) {
+					window[eventTarget.add]("touchmove", drag);
+					window[eventTarget.add]("touchend", end);
+				}
+				else if (e.type === "mousedown") {
+					window[eventTarget.add]("mousemove", drag);
+					window[eventTarget.add]("mouseup", end);
+				}
+			};
+			drag.remove = function (e) {
+				if (hasTouch && (e.type === "touchend")) {
+					window[eventTarget.remove]("touchmove", drag);
+					window[eventTarget.remove]("touchend", end);
+				}
+				else if (e.type === "mouseup") {
+					window[eventTarget.remove]("mousemove", drag);
+					window[eventTarget.remove]("mouseup", end);
+				}
+			};
+
+			return drag;
 		})();
 
-		window[eventTarget.add]("mouseup", function (e) {
+		function end(e) {
 			if (!state.action) { return; }
 			if (!e) { e = window.event; }
 
 			state.action = action.none;
 
-			window[eventTarget.remove]("mousemove", mousemove);
+			drag.remove(e);
 
 			e.preventDefault();
-		});
+		}
+
+		resize[eventTarget.add]("mousedown", start_resize);
+		port[eventTarget.add]("mousedown", start_move);
+		if (hasTouch) {
+			resize[eventTarget.add]("touchstart", start_resize);
+			port[eventTarget.add]("touchstart", start_move);
+		}
 	})();
 
 
-	var offset = buffer.view.offset,
-		offsetTransform = new Transformer(true);
+	var offset = buffer.view.offset;
+	requestAnimationFrame(function raf() {
+		buffer.render();
 
-	//requestAnimationFrame(function raf() {
-	//	buffer.render();
+		if (offset.dirty) {
+			position(buffer.canvas.style, offset.x, offset.y);
+			offset.dirty = null;
+		}
 
-	//	if (offset.dirty) {
-	//		offsetTransform
-	//			.reset()
-	//			.translate(offset.x, offset.y)
-	//			.apply(buffer.canvas.style);
-
-	//		offset.dirty = null;
-	//	}
-
-	//	requestAnimationFrame(raf);
-	//});
+		requestAnimationFrame(raf);
+	});
 });
