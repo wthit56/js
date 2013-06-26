@@ -1,4 +1,4 @@
-// data:text/html;ascii,<script src="http://localhost:45917/infinite-tiles/0.3.js"></script>
+// data:text/html;ascii,<script src="http://localhost:45917/test.js"></script>
 
 var TileBuffer = (function () {
 	var has2dContext = (function () {
@@ -72,54 +72,8 @@ var TileBuffer = (function () {
 		},
 
 		render: (function () {
-			var RenderBox = (function () {
-				function factory(calculate) {
-					var renderbox = function () {
-						this.from = 0; this.to = 0; this.size = 0;
-						this.toRender = false;
-					};
-					renderbox.prototype.calculate = calculate;
-
-					return renderbox;
-				};
-
-				var from, to, size;
-				return {
-					// for left and top
-					Near: factory(function (fromBefore, fromAfter, sizeAfter) {
-						this.toRender = false;
-
-						if (fromAfter < fromBefore) {
-							from = this.from = fromAfter;
-							to = this.to = Math.min(fromAfter + sizeAfter, fromBefore);
-							size = this.size = to - from;
-							this.toRender = true;
-
-							if (size >= sizeAfter) {
-								return true;
-							}
-						}
-					}),
-					// for right and bottom
-					Far: factory(function (fromBefore, fromAfter, sizeBefore, sizeAfter) {
-						this.toRender = false;
-
-						from = this.from = Math.max(fromAfter, fromBefore + sizeBefore); // old far-edge
-						to = this.to = (fromAfter + sizeAfter); // new far-edge
-						size = this.size = to - from;
-
-						if (to > from) {
-							this.toRender = true;
-
-							if (size >= sizeAfter) {
-								return true;
-							}
-						}
-					})
-				};
-			})();
-
 			var canvas, alt, context;
+			var config;
 
 			var map, tileSize, background;
 
@@ -130,15 +84,13 @@ var TileBuffer = (function () {
 
 			var fix;
 
-			var left = new RenderBox.Near(),
-				right = new RenderBox.Far(),
-				top = new RenderBox.Near(),
-				bottom = new RenderBox.Far();
-			var horizon = { left: 0, right: 0, width: 0 };
+			var left, right, top, bottom;
+			var iLeft, iRight, iTop, iBottom;
 
-			function render() {
+			function render(render) {
 				canvas = this.canvas;
 				alt = canvas.alt; context = alt.context;
+				config = this.config;
 
 				map = this.map;
 				tileSize = map.tiles.size;
@@ -262,158 +214,35 @@ var TileBuffer = (function () {
 							context.drawImage(canvas, from0.x, from0.y);
 						}
 
-
-						var x = x0 = x1 = y = y0 = y1 = 0;
-						var left = from.x,
-							right = from.x + size.x,
-							top = from.y,
+						if (render !== false) {
+							left = from.x;
+							right = from.x + size.x;
+							top = from.y;
 							bottom = from.y + size.y;
 
-						var iLeft = Math.max(left, from0.x),
-							iRight = Math.min(right, from0.x + size0.x),
-							iTop = Math.max(top, from0.y),
+							iLeft = Math.max(left, from0.x);
+							iRight = Math.min(right, from0.x + size0.x);
+							iTop = Math.max(top, from0.y);
 							iBottom = Math.min(bottom, from0.y + size0.y);
 
-						var rLeft = (iLeft > left),
-							rRight = (iRight < right),
-							rTop = (iTop > top),
-							rBottom = (iBottom < bottom);
-
-						if (rLeft || rTop || rBottom) { x = x0 = left; }
-						else { x = x0 = iRight; }
-
-						if (rRight || rTop || rBottom) { x1 = right; }
-						else { x1 = iLeft; }
-
-						if (rTop || rLeft || rRight) { y = y0 = top; }
-						else { y = y0 = iBottom; }
-
-						if (rBottom || rLeft || rRight) { y1 = bottom; }
-						else { y1 = iTop; }
-
-						console.log(
-							"x: " + x0 + " > " + x1 + ", " +
-							"y: " + y0 + " > " + y1
-						);
-
-						while (y < y1) {
-							while (x < x1) {
-								console.log(x, y);
-
-								if (
-									(!rTop || (y < iTop)) ||
-									(!rBottom || (y > iBottom)) ||
-									(!rLeft || (x < iLeft))
-								) { }
-								else if (rRight && (x < iRight)) {
-									x = iRight;
-									continue;
-								}
-
-								x += tileSize;
-							}
-
-							if (
-								rLeft || rRight ||
-								(!rTop || (y < iTop))
-							) {
-								y += tileSize;
-							}
-							else if (rBottom) {
-								y = iBottom;
-							}
-
-							x = x0;
-						}
-
-
-						if (false) {
-							if (left.toRender || top.toRender || bottom.toRender) {
-								// render new tiles
-								var x = x0 = 0, x1 = x2 = null, x3 = 0,
-								y = y0 = 0, y1 = y2 = null, y3 = 0;
-
-								if (!right.toRender || left.toRender || top.toRender || bottom.toRender) {
-									x = x0 = from0.x;
-									x3 = from.x + size.x;
-
-									if (left.render) { x1 = left.to; x2 = right.from; }
-								}
-								else {
-									x = x0 = right.from;
-									x3 = right.to;
-								}
-
-								if (!bottom.toRender || top.toRender || left.toRender || right.toRender) {
-									y = y0 = from0.y;
-									y3 = from.y + size.y;
-
-									if (top.render) { y1 = top.to; y2 = bottom.from; }
-								}
-								else {
-									y = y0 = bottom.from;
-									y3 = bottom.to;
-								}
-
-								console.log("bounds:", {
-									x0: x0, x1: x1, x2: x2, x3: x3,
-									y0: y0, y1: y1, y2: y2, y3: y3
-								});
-
-								while (y < y3) {
-									while (x < x3) {
-										map.tiles.render(context, x, y);
-
-										if (
-										(left.toRender && (x > left.to)) &&
-										(right.toRender && (x < right.from))
-									) {
-											x = right.from;
-										}
-										else {
-											x += tileSize;
-										}
-									}
-
-									x = x0;
-									y += tileSize;
-								}
-							}
-						}
-
-						if (false) {
-							if (left.toRender) {
-								context.fillStyle = "rgba(255,255,0,0.2)";
-								context.fillRect(left.from, from.y, left.size, size.y);
-							}
-							if (right.toRender) {
-								context.fillStyle = "rgba(0,255,0,0.2)";
-								context.fillRect(right.from, from.y, right.size, size.y);
-							}
-
-							if (top.toRender || bottom.toRender) {
-								horizon.left = left.toRender ? left.to : from.x;
-								horizon.right = right.toRender ? right.from : from.x + size.x;
-								horizon.width = horizon.right - horizon.left;
-
-								if (top.toRender) {
-									context.fillStyle = "rgba(255,0,0,0.2)";
-									context.fillRect(horizon.left, top.from, horizon.width, top.size);
-								}
-								if (bottom.toRender) {
-									context.fillStyle = "rgba(0,0,255,0.2)";
-									context.fillRect(horizon.left, bottom.from, horizon.width, bottom.size);
-								}
-							}
+							renderArea(this, left, iLeft, top, bottom);
+							renderArea(this, iRight, right, top, bottom);
+							renderArea(this, iLeft, iRight, top, iTop);
+							renderArea(this, iLeft, iRight, iBottom, bottom);
 						}
 					}
 					context.restore();
 
-					var config = this.config;
-					if (config.asDOM) {
+					if (size1) {
 						canvas.width = alt.width;
 						canvas.height = alt.height;
+					}
+
+					if (config.asDOM) {
 						canvas.context.drawImage(alt, 0, 0);
+					}
+					else {
+						this.canvas = alt;
 					}
 
 					// reset values
@@ -468,6 +297,22 @@ var TileBuffer = (function () {
 					return result;
 				};
 			})();
+
+			function renderArea(buffer, x, x1, y, y1) {
+				var initialX = x;
+				var context = buffer.canvas.alt.context;
+				var tileSize = buffer.map.tiles.size;
+
+				while (y < y1) {
+					x = initialX;
+					while (x < x1) {
+						map.tiles.render(context, x, y);
+						x += tileSize;
+					}
+
+					y += tileSize;
+				}
+			}
 
 			return render;
 		})()
@@ -527,9 +372,6 @@ var eventTarget = {
 	)
 };
 
-
-importScript("http://192.168.0.9:45917/shims/raf-caf.js");
-
 document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
 	html{\
 		-webkit-text-size-adjust:100%;\
@@ -571,7 +413,7 @@ var port = (function () {
 			}
 		},
 		size: {
-			x: window.innerWidth - 20, y: window.innerHeight - 20,
+			x: window.innerWidth - 50, y: window.innerHeight - 50,
 			update: function () {
 				buffer.resize(this.x, this.y);
 
@@ -584,39 +426,53 @@ var port = (function () {
 	return port;
 })();
 
+var tileSize=50;
+var mapX = port.view.size.x * 3; mapX = mapX - (mapX % tileSize);
+var mapY = port.view.size.y * 3; mapY = mapY - (mapY % tileSize);
 var buffer = window.buffer = new TileBuffer(
 	{
 		background: "white",
 		tiles: {
-			render: function (context, x, y) {
-				if ((Math.random() * 2) | 0) {
-					if (context.fillStyle != "hsl(0,0%,50%)") {
-						context.fillStyle = "hsl(0,0%,50%)";
+			render: (function () {
+				var cache = {},
+					key = "";
+
+				return function (context, x, y) {
+					key = x + "," + y;
+					if (cache[key] == null) {
+						cache[key] = ((Math.random() * 2) | 0);
 					}
-					context.fillRect(x, y, this.size, this.size);
-				}
-			},
-			size: 50
+
+					if (cache[key]) {
+						if (context.fillStyle != "hsl(0,0%,50%)") {
+							context.fillStyle = "hsl(0,0%,50%)";
+						}
+						context.fillRect(x, y, this.size, this.size);
+					}
+				};
+			})(),
+			size: tileSize
 		},
-		width: port.view.size.x * 3, height: port.view.size.y * 3
+		width: mapX, height: mapY
 	},
-	{
-		asDOM:true
-	}
+	{ asDOM: true }
 );
 position(buffer.canvas.style, 0, 0);
 port.appendChild(buffer.canvas);
 port.view.size.update();
 
-(function () { // controls
+var controls = (function () { // controls
 	var action = { none: 0, move: 1, resize: 2 };
 	var state = {
+		_dirty: { x: 0, y: 0 },
 		x: 0, y: 0,
+		dirty: null,
 		action: action.none
 	};
 
 	var resize = dummy.querySelector("#resize");
 	var hasTouch = ("ontouchstart" in document);
+	var view = port.view;
 
 	function start_move(e) {
 		if (!e) { e = window.event; }
@@ -626,7 +482,7 @@ port.view.size.update();
 
 		state.action = action.move;
 
-		drag.add(e);
+		//drag.add(e);
 
 		e.preventDefault();
 	}
@@ -639,93 +495,126 @@ port.view.size.update();
 
 		state.action = action.resize;
 
-		drag.add(e);
+		//drag.add(e);
 
 		e.preventDefault();
 	}
 
 	var drag = (function () {
+		var Handler = (function () {
+			function Handler() {
+				this.input = null;
+
+				this.origin = { x: 0, y: 0, change: null };
+				this.position = { x: 0, y: 0, change: null };
+			}
+			Handler.prototype = {
+				input: null,
+				origin: null, position: null,
+
+				start: function (e) {
+					if (e.type === "touchstart") {
+						this.input = e.changedTouches[0].identifier;
+					}
+					else {
+						this.input = true;
+					}
+
+					//this.input = (e.type === "touchstart") ? e.changedTouches[0].id : -1;
+				},
+				move: function (e) {
+				},
+				end: function (e) {
+				}
+			};
+
+			return Handler;
+		})();
+
+
+
 		var x = y = 0;
 		var view = port.view;
+		var dirty;
+		var e;
 
-		function drag(e) {
-			if (!state.action) { return; }
+		function drag() {
 			if (!e) { e = window.event; }
 
-			x = e.pageX; y = e.pageY;
-			switch (state.action) {
-				case action.resize:
-					view.size.x += x - state.x;
-					view.size.y += y - state.y;
-					view.size.update();
-					break;
-				case action.move:
-					view.camera.x -= (x - state.x);
-					view.camera.y -= (y - state.y);
-					view.camera.update();
-					break;
+			dirty = state.dirty = state._dirty;
+			dirty.x = e.pageX; dirty.y = e.pageY;
+
+			e.preventDefault();
+			timer = null;
+		}
+
+		var timer;
+		function time(event) {
+			if (!state.action) { return; }
+			e = event || window.event;
+			if (timer == null) {
+				timer = requestAnimationFrame(drag);
 			}
-
-			state.x = x; state.y = y;
-
 			e.preventDefault();
 		}
 
-		drag.add = function (e) {
-			if (hasTouch && (e.type === "touchstart")) {
-				window[eventTarget.add]("touchmove", drag);
-				window[eventTarget.add]("touchend", end);
-			}
-			else if (e.type === "mousedown") {
-				window[eventTarget.add]("mousemove", drag);
-				window[eventTarget.add]("mouseup", end);
-			}
-		};
-		drag.remove = function (e) {
-			if (hasTouch && (e.type === "touchend")) {
-				window[eventTarget.remove]("touchmove", drag);
-				window[eventTarget.remove]("touchend", end);
-			}
-			else if (e.type === "mouseup") {
-				window[eventTarget.remove]("mousemove", drag);
-				window[eventTarget.remove]("mouseup", end);
-			}
-		};
-
-		return drag;
+		return time;
 	})();
 
 	function end(e) {
 		if (!state.action) { return; }
 		if (!e) { e = window.event; }
 
+		update();
 		state.action = action.none;
 
-		drag.remove(e);
+		//drag.remove(e);
 
 		e.preventDefault();
 	}
 
+	var update = (function () {
+		var dirty, x, y;
+		return function update() {
+			dirty = state.dirty;
+			if (!state.dirty || !state.action) { return; }
+
+			x = dirty.x; y = dirty.y;
+			switch (state.action) {
+				case action.resize:
+					view.size.x += x - state.x;
+					view.size.y += y - state.y;
+					view.size.dirty = true;
+					break;
+				case action.move:
+					view.camera.x -= (x - state.x);
+					view.camera.y -= (y - state.y);
+					view.camera.dirty = true;
+					break;
+			}
+
+			state.x = x; state.y = y;
+			state.dirty = null;
+		};
+	})();
+
 	resize[eventTarget.add]("mousedown", start_resize);
 	port[eventTarget.add]("mousedown", start_move);
+	window[eventTarget.add]("mousemove", drag);
+	window[eventTarget.add]("mouseup", end);
 	if (hasTouch) {
 		resize[eventTarget.add]("touchstart", start_resize);
 		port[eventTarget.add]("touchstart", start_move);
+		window[eventTarget.add]("touchmove", drag);
+		window[eventTarget.add]("touchend", end);
 	}
+
+	return {
+		update: update
+	};
 })();
 
-
-var offset = buffer.view.offset;
-requestAnimationFrame(function raf() {
-	buffer.render();
-
-	if (offset.dirty) {
-		position(buffer.canvas.style, offset.x, offset.y);
-		offset.dirty = null;
-	}
-
-	requestAnimationFrame(raf);
-});
+importScript("http://192.168.0.9:45917/shims/raf-caf.js");
 
 window[eventTarget.add]("load", function () {
 	while (dummy.childNodes.length) {
@@ -733,5 +622,18 @@ window[eventTarget.add]("load", function () {
 	}
 	dummy = null;
 
-	document.body.appendChild(buffer.canvas.alt);
+	var offset = buffer.view.offset;
+	requestAnimationFrame(function raf() {
+		controls.update();
+		port.view.camera.update();
+		port.view.size.update();
+		buffer.render();
+
+		if (offset.dirty) {
+			position(buffer.canvas.style, offset.x, offset.y);
+			offset.dirty = null;
+		}
+
+		requestAnimationFrame(raf);
+	});
 });
