@@ -1,4 +1,4 @@
-// data:text/html;ascii,<script src="http://localhost:45917/infinite-tiles/0.21.js"></script>
+// data:text/html;ascii,<script src="http://localhost:45917/objects/versions/TileBuffer-0.21.js"></script>
 
 document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
 	body {margin:5px;}\
