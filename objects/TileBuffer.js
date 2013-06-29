@@ -1,174 +1,197 @@
 if (!window.TileBuffer) {
 	window.TileBuffer = (function () {
-		var has2dContext = (function () {
-			var dummy = document.createElement("CANVAS");
-			return (dummy.getContext && dummy.getContext("2d"));
-		})();
+		var dummy = document.createElement("CANVAS");
+		if (!dummy.getContext || !dummy.getContext("2d")) {
+			var r = new Boolean(false);
+			r.message = "Browser does not support the Canvas Element's 2D context.";
+			return r;
+		}
+		dummy = null;
 
-		function TileBuffer(map, config) {
-			if (!has2dContext) {
-				throw new Error("Browser does not support 2D Canvas Context.");
-			}
-
-			this.map = map;
-			this.config = config || {};
-
-			var canvas = this.canvas =
-				document.createElement("CANVAS");
+		function TileBuffer(tileSize, background) {
+			var canvas = this.canvas = document.createElement("CANVAS");
+			canvas.width = canvas.height = 0;
 			canvas.context = canvas.getContext("2d");
+			canvas.dirtySize = false;
 
-			// create alt
-			var alt = document.createElement("CANVAS");
+			var alt = canvas.alt = document.createElement("CANVAS");
+			alt.width = alt.height = 0;
 			alt.context = alt.getContext("2d");
-			canvas.alt = alt; alt.alt = canvas; // link canvas and alt together
+			alt.alt = canvas;
+			alt.dirtySize = false;
 
-			if (!config.single) {
-				canvas.dirty = alt.dirty =
-					false;
-			}
+			canvas.dirty = false;
 
 			this.view = {
 				_dirty: {
 					from: { x: 0, y: 0 },
-					size: { x: 0, y: 0 },
-					offset: { x: 0, y: 0 }
+					offset: { x: 0, y: 0 },
+					size: { x: 0, y: 0 }
 				},
-
 				from: {
 					x: 0, y: 0,
-					max: { x: map.width, y: map.height },
+					max: { x: 0, y: 0, dirty: false },
+					offset: { x: 0, y: 0, dirty: null },
 					dirty: null
 				},
 				size: {
 					x: 0, y: 0,
-					dirty: null
-				},
-
-				offset: {
-					x: 0, y: 0,
+					max: { x: 0, y: 0, dirty: false },
 					dirty: null
 				}
 			};
+
+			this.tileSize = Math.max(0, tileSize);
+			this.background = background;
+
+			this.singleBuffer = false;
+			this.renderArea = null;
 		}
 		TileBuffer.prototype = {
-			map: null,
-			config: null,
-			canvas: null,
+			tileSize: 1, background: null,
+			singleBuffer: false,
+			renderArea: null,
 
-			offset: null,
 			view: null,
 
-			resize: function (x, y) {
-				var size = this.view.size.dirty = this.view._dirty.size;
+			getOffset: (function () {
+				var offset;
+				return function TileBuffer_getOffset() {
+					offset = this.view.from.offset;
+					if (offset.dirty) {
+						offset.dirty = null;
+						return offset;
+					}
+				};
+			})(),
 
-				size.x = (x > 0) ? x : 0;
-				size.y = (y > 0) ? y : 0;
+			setFrom: (function () {
+				var from, dirty;
+				return function TileBuffer_setFrom(x, y) {
+					from = this.view.from;
+					dirty = from.dirty = this.view._dirty.from;
+					dirty.x = x; dirty.y = y;
 
-				return this;
-			},
-			moveTo: function (x, y) {
-				var from = this.view.from.dirty = this.view._dirty.from;
+					return this;
+				};
+			})(),
+			setSize: (function () {
+				var size, dirty;
+				return function TileBuffer_setSize(x, y) {
+					size = this.view.size;
+					dirty = size.dirty = this.view._dirty.size;
+					dirty.x = x; dirty.y = y;
 
-				from.x = x;
-				from.y = y;
+					return this;
+				};
+			})(),
 
-				return this;
-			},
+			setMaxSize: (function () {
+				var sMax;
+				return function TileBuffer_setMaxSize(width, height) {
+					sMax = this.view.size.max;
+					if ((sMax.x != width) || (sMax.y != height)) {
+						sMax.dirty = true;
+						sMax.x = width; sMax.y = height;
+						recalcMaxFrom.call(this);
+					}
+
+					return this;
+				};
+			})(),
 
 			render: (function () {
+				var from, from0, from1;
+				var offset0, offset1;
+				var size, size0, size1, sizeMax;
+				var tileSize;
+
 				var canvas, alt, context;
-				var config;
-
-				var map, tileSize, background;
-
-				var view, offset;
-
-				var from0, from1, from, fromMax;
-				var size0, size1, size;
-
-				var fix;
+				var background;
 
 				var left, right, top, bottom;
 				var iLeft, iRight, iTop, iBottom;
+				var renderArea;
 
-				function render(render) {
-					canvas = this.canvas;
-					alt = canvas.alt; context = alt.context;
-					config = this.config;
+				var fix;
 
-					map = this.map;
-					tileSize = map.tiles.size;
+				function TileBuffer_render() {
+					// find tileSize
+					tileSize = this.tileSize;
+					// tileSize should be a minimum of 1
+					if (this.tileSize < 1) {
+						tileSize = this.tileSize = 1;
+					}
 
-					view = this.view;
-					offset = view.offset;
-
-					from0 = view.from;
-					from1 = from0.dirty;
-					from = from1 || from0;
-					fromMax = from0.max;
-
-					size0 = view.size;
+					// find size objects
+					size0 = this.view.size;
 					size1 = size0.dirty;
 					size = size1 || size0;
 
-					// size is dirty
+					// find from objects
+					from0 = this.view.from;
+					from1 = from0.dirty;
+					from = from1 || from0;
+					fromMax = from0.max;
+					offset0 = from0.offset;
+
+					// size is dirty...
 					if (size1) {
-						// fix values
-						size1.x = fixSize(size1.x, tileSize);
-						size1.y = fixSize(size1.y, tileSize);
+						// ...so perform initial corrections
 
-						// clip size to map size
-						if (size1.x >= map.width) {
-							size1.x = map.width;
-						}
-						if (size1.y >= map.height) {
-							size1.y = map.height;
-						}
+						// fix size to cover requested view
+						sizeMax = size0.max;
+						size1.x = fixSize(size1.x, tileSize, sizeMax.x);
+						size1.y = fixSize(size1.y, tileSize, sizeMax.y);
 
-						// size has not changed
-						if (
-							(size1.x == size0.x) &&
-							(size1.y == size0.y)
-						) {
+						// size still dirty
+						if ((size1.x != size0.x) || (size1.y != size0.y)) {
+							// from not dirty...
+							if (!from1) {
+								// ...so make dirty
+								from = from1 = from0.dirty = this.view._dirty.from;
+
+								// reset value
+								from1.x = from0.x - offset0.x;
+								from1.x = from0.y - offset0.y;
+							}
+
+							// recalculate max
+							fromMax.x = size0.max.x - size1.x;
+							fromMax.y = size0.max.y - size1.y;
+						}
+						// size no longer dirty...
+						else {
+							// ...so clean it
 							size1 = size0.dirty = null;
 							size = size0;
 						}
-						// size has changed
-						else {
-							// from not changed
-							if (!from1) {
-								from1 = from0.dirty = from =
-									this.view._dirty.from;
-								from1.x = from0.x - offset.x;
-								from1.y = from0.y - offset.y;
-							}
-							// re-calculate maximum x and y
-							fromMax.x = map.width - size1.x;
-							fromMax.y = map.height - size1.y;
-						}
 					}
 
-					// from is dirty
+					// from is dirty...
 					if (from1) {
-						offset.dirty = view._dirty.offset;
+						// ...so perform initial corrections
 
-						fix = fixFrom(from1.x, fromMax.x, tileSize);
+						// make offset dirty
+						offset1 = offset0.dirty = this.view._dirty.offset;
+
+						// fix values
+						fix = fixFrom(from1.x, tileSize, fromMax.x);
 						from1.x = fix.value;
-						offset.dirty.x = fix.offset;
+						offset1.x = fix.offset;
 
-						fix = fixFrom(from1.y, fromMax.y, tileSize, offset.y, "y");
+						fix = fixFrom(from1.y, tileSize, fromMax.y);
 						from1.y = fix.value;
-						offset.dirty.y = fix.offset;
+						offset1.y = fix.offset;
 
-						if (
-							(offset.dirty.x != offset.x) ||
-							(offset.dirty.y != offset.y)
-						) {
-							offset.x = offset.dirty.x;
-							offset.y = offset.dirty.y;
+						fix = false;
+
+						if ((offset0.x != offset1.x) || (offset0.y != offset1.y)) {
+							offset0.x = offset1.x;
+							offset0.y = offset1.y;
 						}
 						else {
-							offset.dirty = null;
+							offset0.dirty = null;
 						}
 
 						if ((from1.x == from0.x) && (from1.y == from0.y)) {
@@ -177,80 +200,103 @@ if (!window.TileBuffer) {
 						}
 					}
 
+					// view is dirty
 					if (from1 || size1) {
-						// Near RenderBoxes (left, top) return false when they would cover the entire buffer.
-						//   This would therefore stop execution of subsequent RenderBox calculations.
-						// Far RenderBoxes (right, bottom) always return true, and therefore never
-						//   never stop execution.
-						//(
-						//	left.calculate(from0.x, from.x, size.x) ||
-						//	top.calculate(from0.y, from.y, size.y) ||
-						//	bottom.calculate(from0.y, from.y, size0.y, size.y) ||
-						//	right.calculate(from0.x, from.x, size0.x, size.x)
-						//);
+						// find canvasses
+						canvas = this.canvas;
+						alt = canvas.alt;
+						context = alt.context;
 
-						if (size1) {
-							alt.width = size1.x;
-							alt.height = size1.y;
+						var resized = false;
+
+						if (size1 || alt.dirtySize) {
+							if (alt.width != size.x) {
+								alt.width = size.x;
+								resized = true;
+							}
+							if (alt.height != size.y) {
+								alt.height = size.y;
+								resized = true;
+							}
+
+							alt.dirtySize = false;
+
+							if (size1) { canvas.dirtySize = true; }
 						}
 
-						// render
 						context.save();
 						{
+							// clear
+							background = this.background;
+							if (background != null) {
+								if (context.fillStyle != background) {
+									context.fillStyle = background;
+								}
+								context.fillRect(0, 0, size.x, size.y);
+							}
+							else if (!resized) {
+								context.clearRect(0, 0, size.x, size.y);
+							}
+
+							// translate to new drawing position
 							context.translate(-from.x, -from.y);
 
-							// clear
-							background = this.map.background;
-							if (background) {
-								context.fillStyle = background;
-								context.fillRect(from.x, from.y, size.x, size.y);
-							}
-							else if (!size1) {
-								context.clearRect(from.x, from.y, size.x, size.y);
-							}
+							// find rendering telemetry
+							//	- outer
+							left = from.x; right = from.x + size.x;
+							top = from.y; bottom = from.y + size.y;
+							//	- inner
+							iLeft = Math.min(from.x, Math.max(left, from0.x));
+							iRight = Math.max(from.x, Math.min(right, from0.x + size0.x));
+							iTop = Math.min(from.y, Math.max(top, from0.y));
+							iBottom = Math.max(from.y, Math.min(bottom, from0.y + size0.y));
 
+							iLeft = Math.max(left, from0.x);
+							iRight = Math.min(right, from0.x + size0.x);
+							iTop = Math.max(top, from0.y);
+							iBottom = Math.min(bottom, from0.y + size0.y);
+
+							// find rendering function
+							renderArea = this.renderArea;
+
+							// old view still visible in new view...
 							if (
-								((canvas.width > 0) && (canvas.height > 0)) &&
-								((from0.x + size0.x > from.x) && (from0.x < from.x + size.x)) &&
-								((from0.y + size0.y > from.y) && (from0.y < from.y + size.y))
+								((size0.x > 0) && (size0.y > 0)) &&
+								(
+									(iLeft < right) && (iTop < bottom) &&
+									(iRight > left) && (iBottom > top)
+								)
 							) {
-								// draw pre-rendered
+								// ...so render old view into new view
 								context.drawImage(canvas, from0.x, from0.y);
+
+								// render strips
+								if (top < bottom) {
+									if (left < iLeft) { // left
+										renderArea(context, left, top, iLeft, bottom);
+									}
+									if (iRight < right) { // right
+										renderArea(context, iRight, top, right, bottom);
+									}
+								}
+								if (iLeft < iRight) {
+									if (top < iTop) { // top
+										renderArea(context, iLeft, top, iRight, iTop);
+									}
+									if (iBottom < bottom) { // bottom
+										renderArea(context, iLeft, iBottom, iRight, bottom);
+									}
+								}
 							}
-
-							if (render !== false) {
-								left = from.x;
-								right = from.x + size.x;
-								top = from.y;
-								bottom = from.y + size.y;
-
-								iLeft = Math.max(left, from0.x);
-								iRight = Math.min(right, from0.x + size0.x);
-								iTop = Math.max(top, from0.y);
-								iBottom = Math.min(bottom, from0.y + size0.y);
-
-								renderArea(this, left, iLeft, top, bottom);
-								renderArea(this, iRight, right, top, bottom);
-								renderArea(this, iLeft, iRight, top, iTop);
-								renderArea(this, iLeft, iRight, iBottom, bottom);
+							// old view no longer visible...
+							else {
+								// ...so render completely new view
+								renderArea(context, left, top, right, bottom);
 							}
 						}
 						context.restore();
 
-						if (size1) {
-							canvas.width = alt.width;
-							canvas.height = alt.height;
-						}
-						canvas.dirty = true;
-
-						if (config.single) {
-							canvas.context.drawImage(alt, 0, 0);
-						}
-						else {
-							canvas = this.canvas = alt;
-						}
-
-						// reset values
+						// set view to new view
 						if (from1) {
 							from0.x = from1.x;
 							from0.y = from1.y;
@@ -261,28 +307,36 @@ if (!window.TileBuffer) {
 							size0.y = size1.y;
 							size0.dirty = null;
 						}
+
+						if (this.singleBuffer) {
+							if (canvas.dirtySize) {
+								if (canvas.width != size.x) { canvas.width = size.x; }
+								if (canvas.height != size.y) { canvas.height = size.y; }
+							}
+
+							canvas.context.drawImage(alt, 0, 0);
+						}
+						else {
+							this.canvas = alt;
+							return alt;
+						}
 					}
 				}
 
 				var fixSize = (function () {
-					var r;
-
-					return function fixSize(value, tileSize) {
-						r = value % tileSize;
-						value = value + tileSize;
-						if (r != 0) {
-							value += tileSize - r;
-						}
-
+					var over;
+					return function fixSize(value, tileSize, max) {
+						over = value % tileSize;
+						value += tileSize;
+						if (over) { value += tileSize - over; }
+						if (value > max) { return max; }
 						return value;
 					};
 				})();
-
 				var fixFrom = (function () {
-					var result = { value: 0, offset: 0 },
-						offset = 0;
-
-					return function fixFrom(value, max, tileSize) {
+					var result = { value: null, offset: null },
+						offset;
+					return function (value, tileSize, max) {
 						if (value < 0) {
 							offset = -value;
 							value = 0;
@@ -298,30 +352,30 @@ if (!window.TileBuffer) {
 
 						result.value = value;
 						result.offset = offset;
-
 						return result;
 					};
 				})();
 
-				function renderArea(buffer, x, x1, y, y1) {
-					var initialX = x;
-					var context = buffer.canvas.alt.context;
-					var tileSize = buffer.map.tiles.size;
-
-					while (y < y1) {
-						x = initialX;
-						while (x < x1) {
-							map.tiles.render(context, x, y);
-							x += tileSize;
-						}
-
-						y += tileSize;
-					}
-				}
-
-				return render;
+				return TileBuffer_render;
 			})()
 		};
+
+		var recalcMaxFrom = (function () {
+			var fMax, size, sMax,
+				x, y;
+			return function recalcMaxFrom() {
+				fMax = this.view.from.max;
+				size = this.view.size;
+				sMax = size.max;
+				x = sMax - size.x;
+				y = sMax - size.y;
+
+				if ((fMax.x != x) || (fMax.y != y)) {
+					fMax.dirty = true;
+					fMax.x = x; fMax.y = y;
+				}
+			};
+		})();
 
 		return TileBuffer;
 	})();
