@@ -128,42 +128,60 @@
   		};
   	})();
 
+  	//var from = {
+  	//  Drag: null,
+  	//  start: function (e) { from.Drag = this; e.preventDefault(); },
+  	//  move: function (e) { e.preventDefault(); },
+  	//  end: function (e) { from.Drag = null; e.preventDefault(); }
+  	//};
+  	//Drag.hook(view, function (e) {
+  	//  from.start.call(new Drag(e, from.move, from.end), e);
+  	//});
 
-  	var from = {
-  		Drag: null,
-  		start: function (e) { from.Drag = this; e.preventDefault(); },
-  		move: function (e) { e.preventDefault(); },
-  		end: function (e) { from.Drag = null; e.preventDefault(); }
-  	};
-  	Drag.hook(view, function (e) {
-  		from.start.call(new Drag(e, from.move, from.end), e);
-  	});
+  	var cameraDrag = null;
+  	Drag.hook(view,
+  	    function (e) { // start
+  	    	cameraDrag = this; e.preventDefault();
+  	    },
+  	    function (e) { // move
+  	    	e.preventDefault();
+  	    },
+  	    function (e) { // end
+  	    	cameraDrag = null; e.preventDefault();
+  	    }
+  	);
 
-  	var size = {
-  		Drag: null,
-  		start: function (e) { size.Drag = this; e.preventDefault(); },
-  		move: function (e) { e.preventDefault(); },
-  		end: function (e) { size.Drag = null; e.preventDefault(); }
-  	};
-  	Drag.hook(document.getElementById("resize"), function (e) {
-  		size.start.call(new Drag(e, size.move, size.end), e);
-  	});
+  	var sizeDrag = null;
+  	Drag.hook(document.getElementById("resize"),
+  	    function (e) { // start
+  	    	sizeDrag = this; e.preventDefault();
+  	    },
+  	    function (e) { // move
+  	    	e.preventDefault();
+  	    },
+  	    function (e) { // end
+  	    	sizeDrag = null; e.preventDefault();
+  	    }
+  	);
 
   	tiles.onload = function () {
+  		var diff;
   		requestAnimationFrame(function raf() {
-  			if (size.Drag) {
-  				var sizeDiff = size.Drag.position.diff.get();
-  				if (sizeDiff) {
-  					view.size.add(sizeDiff.x, sizeDiff.y);
+  			if (sizeDrag) {
+  				diff = sizeDrag.position.diff.get();
+  				if (diff) {
+  					view.size.add(diff.x, diff.y);
   				}
   			}
 
-  			if (from.Drag) {
-  				var fromDiff = from.Drag.position.diff.get();
-  				if (fromDiff) {
-  					view.camera.add(fromDiff.x, fromDiff.y);
+  			if (cameraDrag) {
+  				diff = cameraDrag.position.diff.get();
+  				if (diff) {
+  					view.camera.add(diff.x, diff.y);
   				}
   			}
+
+  			diff = null;
 
   			view.update();
   			if (buffer.render()) { showCanvas(); }

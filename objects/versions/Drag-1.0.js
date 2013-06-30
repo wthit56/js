@@ -67,13 +67,10 @@ if (!window.Drag) {
 
 			type: null
 		};
-		Drag.hook = function (target, start, move, end, dragContainer) {
-			function start_proxy(e) {
-				return start.call(new Drag(e, move, end, dragContainer), e);
-			};
-			target[eventTarget.add]("mousedown", start_proxy);
+		Drag.hook = function (target, listener) {
+			target[eventTarget.add]("mousedown", listener);
 			if (hasTouch) {
-				target[eventTarget.add]("touchstart", start_proxy);
+				target[eventTarget.add]("touchstart", listener);
 			}
 		};
 
