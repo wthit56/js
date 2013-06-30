@@ -91,23 +91,23 @@ if (!window.Drag) {
 				diff.origin.y = pos.y;
 
 				diff.dirty = false;
-			}
 
-			return diff;
+				return diff;
+			}
 		}
 		function get_from_origin() {
 			var pos = this.position,
-			origin = pos.origin,
-			from = origin.from;
+				origin = pos.origin,
+				from = origin.from;
 
 			if (from.dirty) {
 				from.x = pos.x - origin.x;
 				from.y = pos.y - origin.y;
 
 				from.dirty = false;
-			}
 
-			return from;
+				return from;
+			}
 		}
 
 		function pointer_do(action, e) {
@@ -148,6 +148,8 @@ if (!window.Drag) {
 
 				pos.x = pos.origin.x = diff.origin.x = e.pageX;
 				pos.y = pos.origin.y = diff.origin.y = e.pageY;
+
+				if (isNaN(pos.x)) { debugger; }
 
 				var dragContainer = this.dragContainer;
 				bound = dragContainer._Drag_bound;
@@ -190,6 +192,8 @@ if (!window.Drag) {
 
 				pos.x = e.pageX;
 				pos.y = e.pageY;
+
+				if (isNaN(pos.x)) { debugger; }
 
 				event.Drag = this;
 				this.type = "move";
@@ -236,6 +240,8 @@ if (!window.Drag) {
 
 				pos.x = e.pageX;
 				pos.y = e.pageY;
+
+				if (isNaN(pos.x)) { debugger; }
 
 				event.Drag = this;
 				(this.listener.end || this.listener)(event);

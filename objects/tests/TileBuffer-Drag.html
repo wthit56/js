@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1" />
+        <title>TileBuffer/Drag</title>
+		<style type="text/css">
+  	body {margin:0;}
+  	#container {position:relative; float:left;}
+	#view {border:4px solid black; overflow:hidden; position:relative; cursor:all-scroll;}
+	#view canvas {position:absolute;}
+	#resize {
+		width:50px; height:50px; background-color:rgba(255,255,255,0.5);
+		position:absolute; bottom:2px; right:2px; cursor:nwse-resize;
+  	}
+		</style>
+    </head>
+    <body>
+		<div id="container">
+			<div id="view"></div>
+			<span id="resize"></span>
+		</div>
+        <script src="/helpers/position.js" type="text/javascript"></script>
+        <script src="/shims/eventTarget.js" type="text/javascript"></script>
+        <script src="/shims/raf-caf.js" type="text/javascript"></script>
+		<script src="../TileBuffer.js" type="text/javascript"></script>
+		<script src="../Drag.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	var buffer = new TileBuffer(50)
+  	        .setMaxSize(screen.width * 3, screen.height * 3);
+
+  	var view = document.getElementById("view");
+  	view.camera = {
+  		x: 0, y: 0,
+  		dirty: false,
+  		set: function (x, y) {
+  			if ((this.x != x) || (this.y != y)) {
+  				this.x = x;
+  				this.y = y;
+  				this.dirty = true;
+  			}
+  		},
+  		add: function (x, y) {
+  			return this.set(this.x + x, this.y + y);
+  		}
+  	};
+  	view.size = {
+  		x: 480, y: 320,
+  		dirty: true,
+  		set: function (x, y) {
+  			if ((this.x != x) || (this.y != y)) {
+  				this.x = x;
+  				this.y = y;
+  				this.dirty = true;
+  			}
+  		},
+  		add: function (x, y) {
+  			this.set(this.x + x, this.y + y);
+  		}
+  	};
+  	view.update = function () {
+  		if (this.camera.dirty) {
+  			buffer.setFrom(-this.camera.x, -this.camera.y);
+  			this.camera.dirty = false;
+  		}
+  		if (this.size.dirty) {
+  			this.style.width = this.size.x + "px";
+  			this.style.height = this.size.y + "px";
+  			buffer.setSize(this.size.x, this.size.y);
+  			this.size.dirty = false;
+  		}
+  	};
+
+  	view.appendChild(buffer.canvas);
+  	view.appendChild(buffer.canvas.alt);
+
+  	function showCanvas() {
+  		buffer.canvas.style.opacity = 1;
+  		buffer.canvas.alt.style.opacity = 0;
+  	}
+
+  	var tiles = new Image();
+  	buffer.renderArea = (function () {
+  		var x, y, tileSize, midTile;
+  		var cache = {}, key, tile;
+  		return function (context, fromX, fromY, toX, toY) {
+  			if (tileSize != buffer.tileSize) {
+  				tileSize = buffer.tileSize;
+  				midTile = tileSize / 2;
+  			}
+  			console.log(fromX, fromY, toX, toY);
+
+  			x = fromX; y = fromY;
+  			while (y < toY) {
+  				while (x < toX) {
+  					context.save();
+  					context.translate(x + midTile, y + midTile);
+
+  					var tile;
+  					key = x + "," + y;
+  					tile = cache[key] || (cache[key] = {
+  						offset: { x: ((Math.random() * 2) | 0) * tileSize, y: ((Math.random() * 2) | 0) * tileSize },
+  						scale: { x: (((Math.random() * 2) | 0) * 2) - 1, y: (((Math.random() * 2) | 0) * 2) - 1 },
+  						rotate: ((Math.random() * 4) | 0) * Math.PI / 2
+  					});
+
+  					if (tile.rotate) {
+  						context.rotate(TileBuffer.rotate);
+  					}
+  					if (tile.scale.x || tile.scale.y) {
+  						context.scale(tile.scale.x, tile.scale.y);
+  					}
+
+  					context.drawImage(tiles,
+  	                  tile.offset.x, tile.offset.y, tileSize, tileSize,
+  	                  -midTile, -midTile, tileSize, tileSize
+  	                );
+
+  					context.restore();
+
+  					x += tileSize;
+  				}
+
+  				x = fromX;
+  				y += tileSize;
+  			}
+  		};
+  	})();
+
+
+  	var from = {
+  		Drag: null,
+  		start: function (e) { from.Drag = this; e.preventDefault(); },
+  		move: function (e) { e.preventDefault(); },
+  		end: function (e) { from.Drag = null; e.preventDefault(); }
+  	};
+  	Drag.hook(view, function (e) {
+  		from.start.call(new Drag(e, from.move, from.end), e);
+  	});
+
+  	var size = {
+  		Drag: null,
+  		start: function (e) { size.Drag = this; e.preventDefault(); },
+  		move: function (e) { e.preventDefault(); },
+  		end: function (e) { size.Drag = null; e.preventDefault(); }
+  	};
+  	Drag.hook(document.getElementById("resize"), function (e) {
+  		size.start.call(new Drag(e, size.move, size.end), e);
+  	});
+
+  	tiles.onload = function () {
+  		requestAnimationFrame(function raf() {
+  			if (size.Drag) {
+  				var sizeDiff = size.Drag.position.diff.get();
+  				if (sizeDiff) {
+  					view.size.add(sizeDiff.x, sizeDiff.y);
+  				}
+  			}
+
+  			if (from.Drag) {
+  				var fromDiff = from.Drag.position.diff.get();
+  				if (fromDiff) {
+  					view.camera.add(fromDiff.x, fromDiff.y);
+  				}
+  			}
+
+  			view.update();
+  			if (buffer.render()) { showCanvas(); }
+
+  			var offset = buffer.getOffset();
+  			if (offset) {
+  				position(buffer.canvas.style, offset.x, offset.y);
+  				position(buffer.canvas.alt.style, offset.x, offset.y);
+  			}
+
+  			requestAnimationFrame(raf);
+  		});
+  	};
+  	tiles.src = "tiles.png";
+		</script>
+    </body>
+</html>

@@ -8,7 +8,7 @@ if (!window.TileBuffer) {
 		}
 		dummy = null;
 
-		function TileBuffer(tileSize, background) {
+		function TileBuffer(tileSize) {
 			var canvas = this.canvas = document.createElement("CANVAS");
 			canvas.width = canvas.height = 0;
 			canvas.context = canvas.getContext("2d");
@@ -42,7 +42,6 @@ if (!window.TileBuffer) {
 			};
 
 			this.tileSize = Math.max(0, tileSize);
-			this.background = background;
 
 			this.singleBuffer = false;
 			this.renderArea = null;
@@ -153,7 +152,7 @@ if (!window.TileBuffer) {
 
 								// reset value
 								from1.x = from0.x - offset0.x;
-								from1.x = from0.y - offset0.y;
+								from1.y = from0.y - offset0.y;
 							}
 
 							// recalculate max
