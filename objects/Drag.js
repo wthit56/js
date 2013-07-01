@@ -79,12 +79,12 @@ if (!window.Drag) {
 				// defaults to keep object shape
 				this.touchID = null;
 
-				this.isActive = true; // object is now being used
 				this.isNew = false; // object is no longer new
 			}
 
-			// set type to "start", as the drag has now started
-			this.type = "start";
+			this.isActive = true; // object is now being used
+
+			this.type = "start"; // set normalized event type
 
 			// trigger start function
 			start.call(this, event);
@@ -247,130 +247,201 @@ if (!window.Drag) {
 			};
 		})();
 
+		// performs initial set up for a Drag object
 		var start = (function () {
-			var pos, origin, diff, dragContainer, bound;
+			var pos, origin, diff;
+			var dragContainer, bound;
+			var touchID;
 
 			return function start(e) {
+				// find object
 				pos = this.position;
 				origin = pos.origin;
 				diff = pos.diff;
 
+				// set position, origin, and last-read diff values,
+				//	based on event's positioning
 				pos.x = origin.x = diff.last.x = e.pageX;
 				pos.y = origin.y = diff.last.y = e.pageY;
 
+				// all properties are dirty
 				pos.dirty = true;
 				origin.from.dirty = true;
 				diff.dirty = true;
 
-				var dragContainer = this.dragContainer;
-				bound = dragContainer._Drag_bound;
-				if (bound == null) {
-					bound = dragContainer._Drag_bound = 1;
+				// find dragContainer
+				dragContainer = this.dragContainer;
+
+				// find boundCount
+				boundCount = dragContainer._Drag_boundCount;
+				// no boundCount was found...
+				if (boundCount == null) {
+					// ...so set it to 1
+					boundCount = dragContainer._Drag_boundCount = 1;
+					// a container's boundCount will be used to ensure
+					//	only one set of events are ever bound to a single element,
+					//	and are removed only when there are no Drag objects actively
+					//	using the element as their dragContainer
 				}
 
+				// browser supports touch events,
+				//	and initiating event is a touch event...
 				if (hasTouch && isTouchEvent.test(e.type)) {
-					this.touchID = event.changedTouches[0].identifier;
-					touches[this.touchID] = this;
+					// ...so set up touch
+
+					touchID = this.touchID = event.changedTouches[0].identifier; // store current touch's ID
+
+					// add this Drag object to the active touch cache,
+					//	using the current touch's ID
+					touches[touchID] = this;
 					touches.length++;
 
-					if (bound === 1) {
+					// this is the first Drag bind to the dragContainer...
+					if (boundCount === 1) {
+						// ...so attach touch events
 						dragContainer[eventTarget.add]("touchmove", move.handler);
 						dragContainer[eventTarget.add]("touchend", end.handler);
 						dragContainer[eventTarget.add]("touchcancel", end.handler);
 					}
 				}
+				// browser does not support touch events,
+				//	or initiating event is not a touch event...
 				else {
+					// ...so it must be a mouse event
+
+					// set active mouse cache to point to this Drag object
 					mouse = this;
+
+					// this is not a touch object, so touchID should be null
 					this.touchID = null;
 
-					if (bound === 1) {
+					// this is the first Drag bind to the dragContainer...
+					if (boundCount === 1) {
+						// ...so attach mouse events
 						dragContainer[eventTarget.add]("mousemove", move.handler);
 						dragContainer[eventTarget.add]("mouseup", end.handler);
 					}
 				}
 
+				// release references
 				dragContainer = null;
 			};
 		})();
+
+		// handles "move" events
 		var move = (function () {
 			var pos;
 
 			function move(e) {
+				// find position object
 				pos = this.position;
+
+				// event position is different to stored position...
 				if ((pos.x != e.pageX) || (pos.y != e.pageY)) {
-					pos.dirty = pos.origin.from.dirty = pos.diff.dirty =
-						true;
+					// ...so update position
+					pos.x = e.pageX;
+					pos.y = e.pageY;
+
+					// position is now dirty
+					pos.dirty = pos.origin.from.dirty = pos.diff.dirty = true;
 				}
 
-				pos.x = e.pageX;
-				pos.y = e.pageY;
-
-				if (isNaN(pos.x)) { debugger; }
-
-				event.Drag = this;
-				this.type = "move";
-				this.listener(event);
+				event.Drag = this; // link event to this Drag
+				this.type = "move"; // set normalized event type
+				this.listener(event); // call listener
 			}
+			// used as initial "move" event handler
 			move.handler = function (e) {
+				// forward to pointer_do with "move" action and event
 				pointer_do(move, e);
 			}
 
 			return move;
 		})();
+
+		// handles "end" events
 		var end = (function () {
-			var dragContainer, bound, pos;
+			var dragContainer, boundCount;
+			var pos, originFrom, diff;
 
 			function end(e) {
+				// find dragContainer
 				dragContainer = this.dragContainer;
-				bound = --dragContainer._Drag_bound;
 
+				// decrease and retrieve dragContainer's boundCount
+				boundCount = --dragContainer._Drag_boundCount;
+				// boundCount now 0...
+				if (boundCount <= 0) {
+					// ...so set to undefined
+					boundCount = dragContainer._Drag_boundCount = undefined;
+				}
+
+				// Drag is tracking a touch pointer...
 				if (this.touchID != null) {
-					touches[this.touchID] = null;
-					touches.length--;
+					// ...so remove all touch-related hooks
 
-					if (!bound) {
+					// remove from cache
+					touches[this.touchID] = null;
+					touches.length--; // decrease touch count
+
+					// no Drag objects actively bound to dragContainer...
+					if (!boundCount) {
+						// ...so remove touch event handlers
 						dragContainer[eventTarget.remove]("touchmove", move.handler);
 						dragContainer[eventTarget.remove]("touchend", end.handler);
 						dragContainer[eventTarget.remove]("touchcancel", end.handler);
 					}
 				}
+				// Drag is not tracking a touch pointer...
 				else {
+					// ...so remove all mouse-related hooks
+
+					// remove from cache
 					mouse = null;
 
-					if (!bound) {
+					// no Drag objects actively bound to dragContainer...
+					if (!boundCount) {
+						// ...so remove mouse event handlers
 						dragContainer[eventTarget.remove]("mousemove", move.handler);
 						dragContainer[eventTarget.remove]("mouseup", end.handler);
 					}
 				}
 
-				if (!bound) { dragContainer._Drag_bound = null; }
-
+				// find position object
 				pos = this.position;
+				// event position changed...
 				if ((pos.x != e.pageX) || (pos.y != e.pageY)) {
-					pos.origin.from.dirty = pos.diff.dirty =
-						true;
+					// ...so update values
+					pos.x = e.pageX;
+					pos.y = e.pageY;
+
+					// position is now dirty
+					pos.origin.from.dirty = pos.diff.dirty = true;
 				}
 
-				pos.x = e.pageX;
-				pos.y = e.pageY;
-
-				if (isNaN(pos.x)) { debugger; }
-
-				event.Drag = this;
+				event.Drag = this; // link event to this Drag
+				this.type = "end"; // set normalized event type
+				// call listener
+				//	(use "end" listener, default to main listener)
 				(this.listener.end || this.listener)(event);
 
-				pos.origin.from.x = pos.origin.from.y =
-				pos.diff.x = pos.diff.y =
-					0;
+				// find telemetry objects
+				originFrom = pos.origin.from;
+				diff = pos.diff;
 
+				// reset properties
 				this.touchID = null;
 				this.listener = null;
+				dragContainer = this.dragContainer = null;
 
-				dragContainer = null;
+				this.isActive = false; // this Drag is no longer active
+
+				// add to clean cache
 				clean.push(this);
-				this.isActive = false;
 			}
+			// used as initial "end" event handler
 			end.handler = function (e) {
+				// forward to pointer_do with "end" action and event
 				pointer_do(end, e);
 			};
 
