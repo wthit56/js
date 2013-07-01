@@ -1,70 +1,52 @@
 if (!window.TileBuffer) {
 	window.TileBuffer = (function () {
-		// create Canvas Element
 		var dummy = document.createElement("CANVAS");
-
-		// dummy cannot create 2D Context
 		if (!dummy.getContext || !dummy.getContext("2d")) {
-			// create a falsy object for easy testing for the TileBuffer object
-			//	with attached message explaining the problem
 			var r = new Boolean(false);
 			r.message = "Browser does not support the Canvas Element's 2D context.";
 			return r;
 		}
 		dummy = null;
 
-		// shorthand for TileBuffer.prototype
-		var proto;
-
-		// creates a new TileBuffer object,
-		//	based on given tileSize
 		function TileBuffer(tileSize) {
-			// create new canvas
 			var canvas = this.canvas = document.createElement("CANVAS");
 			canvas.width = canvas.height = 0;
 			canvas.context = canvas.getContext("2d");
-			canvas.sizeDirty = false; // size needs to be updated when next drawn to?
+			canvas.sizeDirty = false;
 
-			// create "other" canvas and link canvas to it
 			var alt = canvas.alt = document.createElement("CANVAS");
 			alt.width = alt.height = 0;
 			alt.context = alt.getContext("2d");
-			alt.alt = canvas; // link to canvas
-			alt.sizeDirty = false; // size needs to be updated when next drawn to?
+			alt.alt = canvas;
+			alt.sizeDirty = false;
 
-			// create view object
+			canvas.dirty = false;
+
 			this.view = {
-				_dirty: { // holds dirty objects to be attached 
+				_dirty: {
 					from: { x: 0, y: 0 },
 					offset: { x: 0, y: 0 },
 					size: { x: 0, y: 0 }
 				},
-				from: { // top-left coordinate of view
-					x: 0, y: 0, // currently rendered top-left
-					max: { x: 0, y: 0 }, // maximum coordinate
-					offset: { // offset for outside rendering
-						x: 0, y: 0, // current offset
-						dirty: null // will be set to dirty object when changed
-					},
-					dirty: null // will be set to dirty object
+				from: {
+					x: 0, y: 0,
+					max: { x: 0, y: 0, dirty: false },
+					offset: { x: 0, y: 0, dirty: null },
+					dirty: null
 				},
-				size: { // size of view
-					x: 0, y: 0, // currently rendered size
-					max: { x: 0, y: 0 }, // maximum size (map size)
-					dirty: null // will be set to dirty object when changed
+				size: {
+					x: 0, y: 0,
+					max: { x: 0, y: 0, dirty: false },
+					dirty: null
 				}
 			};
 
-			// remember tileSize,
-			//	and default to 1
-			this.tileSize = (tileSize != null) ? tileSize : 1;
+			this.tileSize = Math.max(0, tileSize);
 
-			// set defaults to keep object shape
-			this.singleBuffer = proto.singleBuffer;
-			this.background = proto.background;
-			this.renderArea = proto.renderArea;
+			this.singleBuffer = false;
+			this.renderArea = null;
 		}
-		proto = TileBuffer.prototype = {
+		TileBuffer.prototype = {
 			// size of a tile (square)
 			tileSize: 1,
 
@@ -134,25 +116,14 @@ if (!window.TileBuffer) {
 			//	to given width and height
 			//	returns this, for chaining
 			setMaxSize: (function () {
-				var size0, size, sizeMax;
+				var sMax;
 
 				return function TileBuffer_setMaxSize(width, height) {
-					// round down
-					width = width - (width % this.tileSize);
-					height = height - (height % this.tileSize);
-
-					// find size variables
-					size0 = this.view.size;
-					size = size0.dirty || size0;
-					sizeMax = size0.max;
-
-					// size max should change...
-					if ((sizeMax.x != width) || (sizeMax.y != height)) {
-						// ...so change it
-						sizeMax.x = width; sizeMax.y = height;
-
-						// reset "from" to be recalculated later
-						checkSizeMax.call(this);
+					sMax = this.view.size.max;
+					if ((sMax.x != width) || (sMax.y != height)) {
+						sMax.dirty = true;
+						sMax.x = width; sMax.y = height;
+						recalcMaxFrom.call(this);
 					}
 
 					return this;
@@ -216,13 +187,20 @@ if (!window.TileBuffer) {
 						if ((size1.x != size0.x) || (size1.y != size0.y)) {
 							// ...so perform corrections
 
-							// reset "from" to be recalculated later
-							checkSizeMax.call(this);
+							// from is not dirty...
+							if (!from1) {
+								// ...so make it dirty
+								from = from1 = from0.dirty = this.view._dirty.from;
 
-							// from1 may have changed,
-							//	so update shorthand variables
-							from1 = from0.dirty;
-							from = from1 || from0;
+								// reset "from" value to original
+								//	this will trigger recalculation of "from" later
+								from1.x = from0.x - offset0.x;
+								from1.y = from0.y - offset0.y;
+							}
+
+							// recalculate maximum "from" position
+							fromMax.x = size0.max.x - size1.x;
+							fromMax.y = size0.max.y - size1.y;
 						}
 						// size is no longer dirty...
 						else {
@@ -511,40 +489,20 @@ if (!window.TileBuffer) {
 			})()
 		};
 
-		// resets "from" to be recalculated
-		//	and updates from.max with new calculations
-		var checkSizeMax = (function () {
-			var from0, from1, from, fromMax, offset0;
-			var size0, size, sizeMax;
+		var recalcMaxFrom = (function () {
+			var fMax, size, sMax,
+				x, y;
+			return function recalcMaxFrom() {
+				fMax = this.view.from.max;
+				size = this.view.size;
+				sMax = size.max;
+				x = sMax - size.x;
+				y = sMax - size.y;
 
-			return function checkSizeMax() {
-				// find from objects
-				from0 = this.view.from;
-				from1 = from0.dirty;
-				fromMax = from0.max;
-
-				// find size objects
-				size0 = this.view.size;
-				size = size0.dirty || size0;
-				sizeMax = size0.max;
-
-				// from is not dirty...
-				if (!from1) {
-					// ...so make it dirty
-					from1 = from0.dirty = this.view._dirty.from;
-
-					// find offset object
-					offset0 = from0.offset;
-
-					// reset "from" value to original
-					//	this will trigger recalculation of "from" later
-					from1.x = from0.x - offset0.x;
-					from1.y = from0.y - offset0.y;
+				if ((fMax.x != x) || (fMax.y != y)) {
+					fMax.dirty = true;
+					fMax.x = x; fMax.y = y;
 				}
-
-				// recalculate maximum "from" position
-				fromMax.x = size0.max.x - size.x;
-				fromMax.y = size0.max.y - size.y;
 			};
 		})();
 

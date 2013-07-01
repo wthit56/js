@@ -29,6 +29,7 @@
 		<script type="text/javascript">
   	var buffer = new TileBuffer(50)
   	        .setMaxSize(screen.width * 3, screen.height * 3);
+  	buffer.singleBuffer = true;
 
   	var view = document.getElementById("view");
   	view.camera = {
@@ -168,14 +169,14 @@
   		var diff;
   		requestAnimationFrame(function raf() {
   			if (sizeDrag) {
-  				diff = sizeDrag.position.diff.get();
+  				diff = sizeDrag.getChangedDiff();
   				if (diff) {
   					view.size.add(diff.x, diff.y);
   				}
   			}
 
   			if (cameraDrag) {
-  				diff = cameraDrag.position.diff.get();
+  				diff = cameraDrag.getChangedDiff();
   				if (diff) {
   					view.camera.add(diff.x, diff.y);
   				}
@@ -186,7 +187,7 @@
   			view.update();
   			if (buffer.render()) { showCanvas(); }
 
-  			var offset = buffer.getOffset();
+  			var offset = buffer.getChangedOffset();
   			if (offset) {
   				position(buffer.canvas.style, offset.x, offset.y);
   				position(buffer.canvas.alt.style, offset.x, offset.y);

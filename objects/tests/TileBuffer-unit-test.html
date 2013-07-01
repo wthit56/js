@@ -152,7 +152,7 @@
   				render(buffer);
   			}
 
-  			var offset = buffer.getOffset();
+  			var offset = buffer.getChangedOffset();
   			if (offset) {
   				info.innerHTML += "<br/>(" + from.x + ", " + from.y + ") &gt; (" + offset.x + ", " + offset.y + ")";
   			}

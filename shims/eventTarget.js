@@ -1,5 +1,5 @@
-/*// min
-(function(w,e,l,t,a,r,A,D,_){e="eventTarget",l="EventListener",t="tachEvent", a="add", r="remove",A="at",D="de";if(!w[e]){_=w[e]={};if(w[a+l]&&w[r+l]) _[a]=a+l,_[r]=r+l;else if(w[A+t]&&w[A+t]) _[a]=A+t,_[r]=D+t;else w[e]=null;}})(window);
+/* min
+(function(w,e,l,t,a,r,A,D,_){e="eventTarget";if(!w[e]){l="EventListener",t="tachEvent", a="add", r="remove",A="at",D="de";_=w[e]={};if(w[a+l]&&w[r+l]) _[a]=a+l,_[r]=r+l;else if(w[A+t]&&w[A+t]) _[a]=A+t,_[r]=D+t;else w[e]=null;}})(window);
 */
 
 if (!window.eventTarget) {
