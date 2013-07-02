@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+		<div id="id" class="class"></div>
+		<div id="id2" class="class class2"></div>
+        <script src="querySelector.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	function qsa(selector) {
+  		console.group(selector);
+
+  		var find = /((['"])([\W\w]*?)\2)|(,)|(#[^\s,]+)|(\.[^\s,]+)/g;
+  		var found;
+  		var string, id, className;
+  		var selectors = [[]];
+  		var current = selectors[0];
+  		while (found = find.exec(selector)) {
+  			if (found[4]) { // comma
+  				console.log("new selector");
+  				current = [];
+  				selectors.push(current);
+  				console.log(selectors);
+  			}
+
+  			parse.apply(current, found);
+  			console.log(current);
+  		}
+
+  		console.groupEnd();
+
+  		return selectors;
+  	}
+
+  	function parse(match,
+  	    isString, quote, string,
+  	    newSelector,
+  	    id, className
+  	) {
+  		console.log(arguments);
+
+  		if (id) { this.push({ id: id }); }
+  		if (className) { this.push({ type: "class", value: className }); }
+  	}
+
+  	//function test(selector) {
+  	//  console.group(selector);
+  	//  console.log(document.querySelectorAll(selector));
+  	//  console.log(qsa(selector));
+  	//  console.groupEnd();
+  	//}
+
+  	var selectors = qsa("#id.class");
+  	console.log("selectors: ", selectors);
+		</script>
+    </body>
+</html>

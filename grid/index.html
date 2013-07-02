@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Grid</title>
+    </head>
+    <body>
+        <script type="text/javascript">
+			var Grid = (function () {
+				function Grid() {
+					var canvas = this.canvas = document.createElement("CANVAS");
+					canvas.width = canvas.height = 0;
+					canvas.context = canvas.getContext("2d");
+
+					this.view = {
+						scale: { x: 1, y: 1 },
+						axis: { x: 0, y: 0 },
+						dirty: false
+					};
+					this.size = { x: 0, y: 0, dirty: false };
+
+					this.rendering = [];
+				}
+				Grid.prototype = {
+					view: null, size: null,
+
+					rendering: null,
+
+					setSize: (function () {
+						var size;
+
+						return function (width, height) {
+							size = this.size;
+							if ((size.x != width) || (size.y != height)) {
+								size.x = width;
+								size.y = height;
+								size.dirty = true;
+							}
+
+							return this;
+						};
+					})(),
+
+					setScale: (function () {
+						var view, scale;
+
+						return function (x, y) {
+							view = this.view;
+							scale = view.scale;
+							if ((scale.x != x) || (scale.y != y)) {
+								scale.x = x;
+								scale.y = y;
+								view.dirty = true;
+							}
+
+							return this;
+						};
+					})(),
+					setAxis: (function () {
+						var view, axis;
+
+						return function (x, y) {
+							view = this.view;
+							axis = view.axis;
+							if ((axis.x != x) || (axis.y != y)) {
+								axis.x = x;
+								axis.y = y;
+								view.dirty = true;
+							}
+
+							return this;
+						};
+					})(),
+
+					render: (function () {
+						var canvas, context;
+						var view, scale, axis;
+						var size;
+
+						return function () {
+							view = this.view;
+							size = this.size;
+
+							if (view.dirty || size.dirty) {
+								canvas = this.canvas;
+
+								canvas.width = size.x;
+								if (canvas.height != size.y) {
+									canvas.height = size.y;
+								}
+
+								context = canvas.context;
+
+								scale = view.scale;
+								axis = view.axis;
+
+								context.save();
+								{
+									context.translate(axis.x, axis.y);
+									context.scale(0.99, 0.99);
+
+									var left = (axis.x - size.x),
+			                            right = (size.x - axis.x),
+			                            top = (axis.y - size.y),
+			                            bottom = (size.y - axis.y);
+
+									var rendering = this.rendering;
+									var i = 0, c, l = rendering.length;
+									var x, xl, y, yl;
+									var unit, unitX, unitY;
+									while (i < l) {
+										c = rendering[i];
+
+										context.lineWidth = ((c.width > 0.5) ? c.width - 0.5 : c.width);
+										if (context.strokeStyle != c.colour) {
+											context.strokeStyle = c.colour;
+										}
+
+										context.beginPath();
+
+										unit = c.unit;
+										unitX = unit * scale.x;
+										unitY = unit * scale.y;
+
+										console.log("unit: ", unitX, unitY);
+
+										if (unit === 0) {
+											context.moveTo(left, 0);
+											context.lineTo(right, 0);
+
+											context.moveTo(0, top);
+											context.lineTo(0, bottom);
+										}
+										else {
+											x = left - (left % unitX);
+											if (x + (c.width / 2) < left) { x += unitX; }
+											xl = right + c.width;
+
+											y = top - (top % unitY);
+											if (y + (c.width / 2) < top) { y += unitY; }
+											yl = bottom + (c.width / 2);
+
+											console.group();
+											console.log(c);
+
+											while (x < xl) {
+												context.moveTo(x, top);
+												context.lineTo(x, bottom);
+												context.stroke();
+												context.beginPath();
+
+												console.log("x: " + x);
+
+												x += unitX;
+											}
+											while (y < yl) {
+												context.moveTo(left, y);
+												context.lineTo(right, y);
+												context.stroke();
+												context.beginPath();
+
+												console.log("y: " + y);
+
+												y += unitY;
+											}
+
+											console.groupEnd();
+										}
+
+										context.stroke();
+
+
+										i++;
+									}
+								}
+								context.restore();
+							}
+						}
+					})()
+				};
+
+				return Grid;
+			})();
+
+			var g = new Grid().setSize(500, 500).setAxis(250, 250).setScale(5, 5);
+			g.rendering.push({ unit: 1, colour: "hsl(192, 100%, 90%)", width: 1 });
+			g.rendering.push({ unit: 10, colour: "hsl(192, 100%, 85%)", width: 1 });
+			g.rendering.push({ unit: 0, colour: "hsl(192, 100%, 80%)", width: 2 });
+			g.canvas.style.border = "2px solid hsl(0,0%,85%)";
+			document.body.appendChild(g.canvas);
+			g.render();
+
+		</script>
+    </body>
+</html>
