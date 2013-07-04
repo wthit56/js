@@ -29,6 +29,7 @@
     </head>
     <body>
         <script src="Grid.js" type="text/javascript"></script>
+		<script src="/shims/Event.methods.js" type="text/javascript"></script>
 		<script src="/shims/raf-caf.js" type="text/javascript"></script>
 		<script src="/shims/eventTarget.js" type="text/javascript"></script>
 		<script src="/objects/Drag.js" type="text/javascript"></script>
@@ -93,17 +94,6 @@
 
   	container.appendChild(document.body.appendChild(g.canvas));
   	g.render();
-
-  	if (!Event.prototype.stopPropagation) {
-  		Event.prototype.stopPropagation = function () {
-  			this.cancelBubble = true;
-  		};
-  	}
-  	if (!Event.prototype.preventDefault) {
-  		Event.prototype.preventDefault = function () {
-  			this.returnValue = false;
-  		};
-  	}
 
   	var allowDeltaX = false;
   	var offset = { x: g.canvas.offsetLeft + 10, y: g.canvas.offsetTop + 10 };

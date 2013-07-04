@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Selection</title>
+    </head>
+    <body>
+		<textarea id="input"></textarea>
+        <script type="text/javascript">
+			var input = document.getElementById("input");
+			input.space = -1;
+
+			input.addEventListener("keyup", function (e) {
+				var cursor = null;
+				if (input.selectionStart != null) { cursor = input.selectionStart; }
+				else if (input.createTextRange) {
+					var range = input.createTextRange().duplicate();
+					range.moveStart("character", -input.value.length);
+					cursor = range.text.length;
+				}
+
+				// space typed earlier than recorded space
+				if (
+			        (input.space === -1) ||
+			        (
+			            (cursor < input.space) &&
+			            (e.keyCode === 32)
+			        )
+			    ) {
+					this.space = cursor;
+				}
+
+				console.log(this.space);
+			});
+		</script>
+    </body>
+</html>

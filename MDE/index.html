@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>MarkDown Editor</title>
+		<style type="text/css">
+			.MDE {border:2px solid hsl(0,0%,85%); height:500px; overflow:auto;}
+			.MDE .line {margin:0; padding:0; width:100%; border:0; outline:0;}
+		</style>
+    </head>
+    <body>
+        <script src="/shims/Event.methods.js" type="text/javascript"></script>
+		<script src="/shims/eventTarget.js" type="text/javascript"></script>
+        <script src="MDE.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	var editor = new MDE();
+	document.body.appendChild(editor.HTML);
+		</script>
+    </body>
+</html>
