@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Grid</title>
+		<style type="text/css">
+  	#container {
+  		float: left;
+  		position: relative;
+  	}
+  	#scale-display {
+  		position: absolute;
+  		right: 0;
+  		top: 0;
+  		background-color: rgba(255,255,255,0.5);
+  		border: 2px solid hsl(0,0%,85%);
+  		margin: 10px;
+  		padding: 10px;
+  		text-align: center;
+  	}
+  	#scale-display .line {
+  		display: block;
+		  height: 0px;
+		  border: 2px solid black;
+		  width: 100px;
+  	}
+		</style>
+    </head>
+    <body>
+        <script src="Grid.js" type="text/javascript"></script>
+		<script src="/shims/raf-caf.js" type="text/javascript"></script>
+		<script src="/shims/eventTarget.js" type="text/javascript"></script>
+		<script src="/objects/Drag.js" type="text/javascript"></script>
+		<script src="ScrollWheel.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	var g = new Grid().setSize(500, 500).setAxis(250, 250).setScale(1, 1);
+  	g.rendering.push({ unit: 1, colour: "hsl(192, 100%, 90%)", width: 1, minScale: 3 });
+  	g.rendering.push({ unit: 10, colour: "hsl(192, 100%, 80%)", width: 1, minScale: 0.5 });
+  	g.rendering.push({ unit: 0, colour: "hsl(192, 100%, 80%)", width: 2, minX: 0, minY: 0 });
+
+  	var view = {
+  		axis: { x: g.view.axis.x, y: g.view.axis.y },
+  		scale: { x: g.view.scale.x, y: g.view.scale.y },
+  		dirty: false
+  	};
+
+  	var move = null;
+  	Drag.hook(
+  	    g.canvas,
+  	    function (e) { // start
+  	    	move = this;
+  	    	e.preventDefault();
+  	    },
+  	    function (e) { // move
+  	    	e.preventDefault();
+  	    },
+  	    function (e) { // end
+  	    	move = null;
+  	    	e.preventDefault();
+  	    }
+  	);
+
+  	var container = document.body.appendChild(document.createElement("DIV"));
+  	container.id = "container";
+
+  	var scaleDisplay = container.appendChild(document.createElement("DIV"));
+  	scaleDisplay.id = "scale-display";
+  	scaleDisplay.scale = scaleDisplay.appendChild(document.createElement("SPAN"));
+  	scaleDisplay.scale.className = "scale";
+  	scaleDisplay.line = scaleDisplay.appendChild(document.createElement("SPAN"));
+  	scaleDisplay.line.className = "line";
+  	scaleDisplay.linePX = scaleDisplay.appendChild(document.createElement("SPAN"));
+  	scaleDisplay.linePX.className = "line-px";
+  	scaleDisplay.update = (function () {
+  		var scale, size;
+  		return function () {
+  			scale = view.scale;
+
+  			this.scale.innerHTML = (scale.x < 1)
+  	        ? "1 : " + (1 / scale.x)
+  	        : scale.x + " : 1";
+
+  			size = 100 / scale.x;
+  			size = size - (size % 5);
+  			this.line.style.width = (size * scale.x) + "px";
+  			this.linePX.innerHTML = size + "px";
+
+  			scale = null;
+  		};
+  	})();
+  	scaleDisplay.update();
+
+  	container.appendChild(document.body.appendChild(g.canvas));
+  	g.render();
+
+  	if (!Event.prototype.stopPropagation) {
+  		Event.prototype.stopPropagation = function () {
+  			this.cancelBubble = true;
+  		};
+  	}
+  	if (!Event.prototype.preventDefault) {
+  		Event.prototype.preventDefault = function () {
+  			this.returnValue = false;
+  		};
+  	}
+
+  	var allowDeltaX = false;
+  	var offset = { x: g.canvas.offsetLeft + 10, y: g.canvas.offsetTop + 10 };
+  	new ScrollWheel(g.canvas, (function () {
+  		var scale, axis;
+  		var scaleChangeX, scaleChangeY;
+  		var scaleNewX, scaleNewY;
+  		var gridX, gridY;
+
+  		return function (e) {
+  			scale = view.scale;
+  			axis = view.axis;
+
+  			scaleChangeX = (allowDeltaX && (this.delta.x != null))
+  	            ? this.delta.x
+  	            : this.delta.y;
+  			if (scaleChangeX > 0) { scaleChangeX = 1 / 2; }
+  			else if (scaleChangeX < 0) { scaleChangeX = 2; }
+
+  			scaleChangeY = this.delta.y;
+  			if (scaleChangeY > 0) { scaleChangeY = 1 / 2; }
+  			else if (scaleChangeY < 0) { scaleChangeY = 2; }
+
+  			gridX = e.pageX - offset.x;
+  			gridY = e.pageY - offset.y;
+
+  			scaleNewX = Math.min(Math.max(0.5, scale.x * scaleChangeX), 16);
+  			scaleNewY = Math.min(Math.max(0.5, scale.y * scaleChangeY), 16);
+
+  			scaleChangeX = scaleNewX / scale.x;
+  			scaleChangeY = scaleNewY / scale.y;
+
+  			axis.x = gridX + ((axis.x - gridX) * scaleChangeX);
+  			axis.y = gridY + ((axis.y - gridY) * scaleChangeY);
+
+  			view.scale.x = scaleNewX;
+  			view.scale.y = scaleNewY;
+
+  			view.dirty = true;
+
+  			scaleDisplay.update();
+
+  			scale = axis = null;
+  		};
+  	})());
+
+
+  	requestAnimationFrame((function () {
+  		var diff;
+
+  		return function raf() {
+  			if (move && (diff = move.getChangedDiff())) {
+  				view.axis.x += diff.x;
+  				view.axis.y += diff.y;
+  				g.setAxis(view.axis.x, view.axis.y);
+  			}
+  			if (view.dirty) {
+  				g.setScale(view.scale.x, view.scale.y);
+  				g.setAxis(view.axis.x, view.axis.y);
+  				view.scale.dirty = false;
+  			}
+
+  			g.render();
+
+  			requestAnimationFrame(raf);
+  		};
+  	})());
+
+		</script>
+    </body>
+</html>

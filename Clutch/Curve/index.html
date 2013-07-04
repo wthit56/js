@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Curves</title>
+	</head>
+	<body>
+		<script type="text/javascript">
+  	var Curve = (function () {
+  		function Curve(points) {
+  			this.points = arguments;
+  		}
+  		Curve.prototype = {
+  			points: null,
+  			find: function (progress) {
+  				return reduce(this.points, progress);
+  			}
+  		};
+
+  		var pointLists = [], list;
+  		function reduce(points, progress) {
+  			if (points.length === 1) {
+  				return points[0];
+  			}
+
+  			list = pointLists[points.length - 1];
+  			if (!list) {
+  				list = pointLists[points.length - 1] = new Array(points.length - 1);
+  			}
+
+  			var i = 0, l = points.length;
+  			while (i + 1 < l) {
+  				list[i] = points[i] + ((points[i + 1] - points[i]) * progress);
+  				i++;
+  			}
+
+  			return reduce(list, progress);
+  		}
+
+  		return Curve;
+  	})();
+
+  	var x = new Curve(0, 1, 0, 1);
+  	var y = new Curve(0, 0, 1, 1);
+
+  	var zoom = 500;
+  	var canvas = document.body.appendChild(document.createElement("CANVAS"));
+  	canvas.width = zoom; canvas.height = zoom;
+  	var context = canvas.getContext("2d");
+  	context.moveTo(0, zoom);
+  	context.bezierCurveTo(
+  	    x.points[1] * zoom, (1 - y.points[1]) * zoom,
+  	    x.points[2] * zoom, (1 - y.points[2]) * zoom,
+  	    zoom, 0
+  	);
+  	context.strokeStyle = "rgba(255,0,0,0.5)";
+  	context.lineWidth = 5;
+  	context.stroke();
+
+  	context.strokeStyle = "black";
+  	context.lineWidth = 2;
+  	context.beginPath();
+  	context.moveTo(0, zoom);
+
+  	var t = 0, newX, newY;
+  	while ((t - (t % 0.00001)) <= 1) {
+  		newX = x.find(t) * zoom;
+  		newY = (1 - y.find(t)) * zoom;
+
+  		context.lineTo(newX, newY);
+  		context.stroke();
+
+  		context.beginPath();
+  		context.moveTo(newX, newY);
+
+  		t += 0.1;
+  	}
+
+		</script>
+	</body>
+</html>
