@@ -1,10 +1,10 @@
 if (!window.Drag) {
 	window.Drag = (function () {
 		// eventTarget not already loaded...
-		if (!eventTarget) {
+		if (!window.eventTarget) {
 			// ...so load it
-			//	(code minified)
 			(function (w, e, l, t, a, r, A, D, _) { e = "eventTarget"; if (!w[e]) { l = "EventListener", t = "tachEvent", a = "add", r = "remove", A = "at", D = "de"; _ = w[e] = {}; if (w[a + l] && w[r + l]) _[a] = a + l, _[r] = r + l; else if (w[A + t] && w[A + t]) _[a] = A + t, _[r] = D + t; else w[e] = null; } })(window);
+			// (code minified)
 		}
 
 		var clean = []; // holds all clean Drag objects
