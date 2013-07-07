@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Dollar</title>
+    </head>
+    <body>
+		<script type="text/javascript">
+  	if (!window.dollar) {
+  		window.dollar = (function () {
+  			var isID = /^#[^\.[]+$/;
+  			function dollar(dom) {
+  				if (arguments.length) {
+  				}
+  			}
+
+  			function getDOM(dom) {
+  				if (!dom) {
+  					return null;
+  				}
+  				else {
+  					var id = dom.match(isID);
+  					console.log(id);
+  				}
+  			}
+
+
+  			return dollar;
+  		})();
+  	}
+
+  	dollar("#id");
+		</script>
+    </body>
+</html>
