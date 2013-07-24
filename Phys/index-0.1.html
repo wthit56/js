@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Phys</title>
+		<style type="text/css">
+  	#container {
+		  width: 510px;
+		  background: #eee;
+		  float: left;
+  	}
+  	#container span {
+  		display: block;
+  		width: 10px;
+  		height: 100px;
+  		background: black;
+  		position: relative;
+  		float: left;
+  		clear: both;
+  	}
+		</style>
+    </head>
+    <body>
+		<script src="/shims/raf-caf.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	//console.log(new Phys().findAverageVelocity(5, 1) + " == 5");
+  	//console.log(new Phys(0, 1, 3).findTimeChangeForPosition(720) + " == 240");
+  	//console.log(new Phys(0, 1, 5).findPosition(1 * 60) + " == 300");
+  	//console.log(new Phys().findAcceleration(60, 3) + " == 20");
+  	//console.log(new Phys(0, 1, 0, 1).findTimeChangeForVelocity(280 * 1000 / (60 * 60)).toPrecision(2) + " == 78");
+  	//console.log(new Phys(0, 1, 0, 1).findPosition(78) + " === 3042");
+  	//console.log(new Phys(0, 1, 5).findPosition(5) + " == 25");
+  	//console.log(new Phys(0, 1, 0, 1).findPosition(5) + " == 12.5");
+  	//console.log(new Phys(0, 1, 5, 2).findVelocity(4) + " == 13");
+  	//console.log(new Phys().findAccelerationByVelocityAndPosition(80, 260 * 1000 / (60 * 60)).toPrecision(2) + " == 33");
+
+  	//function findAcceleration(initial, target) {
+  	//  var timeChange = target.timeChange;
+  	//  var time = target.time;
+
+  	//  if (timeChange == null) {
+  	//      if (time != null) {
+  	//          timeChange = time - initial.time;
+  	//      }
+  	//      else { return null; }
+  	//  }
+  	//  else {
+  	//      time = initial.time + timeChange;
+  	//  }
+
+  	//  if (time != null) {
+  	//      if (target.position != null) {
+  	//          var averageVelocity = (target.position - initial.position) / timeChange;
+
+  	//          var targetVelocity = (averageVelocity - initial.velocity) * 2;
+
+  	//          return (
+  	//                (targetVelocity - initial.velocity) // velocity change
+  	//                / (timeChange * timeChange) // over time squared
+  	//            );
+  	//      }
+  	//  }
+  	//  else if (target.position != null) {
+  	//      time = target.time = target.position / initial.velocity;
+  	//      return 0;
+  	//  }
+
+  	//  return null;
+  	//}
+
+  	//function atTime(initial, acceleration, time) {
+  	//  time = +time;
+
+  	//  var timeChange = time - initial.time;
+  	//  var newVelocity = (initial.velocity + (acceleration * timeChange));
+
+  	//  var averageVelocity = ((initial.velocity + newVelocity) / 2);
+  	//  console.log(averageVelocity, timeChange, averageVelocity / timeChange);
+
+  	//  initial.velocity = newVelocity;
+  	//  initial.time = time;
+  	//  initial.position = initial.position + (averageVelocity * timeChange);
+
+  	//  return (initial.position);
+  	//}
+
+  	function findAcceleration(initial, final) {
+  		var Ti = initial.time, // time(initial)
+  	        Tf = final.time, // time(final)
+  	        Td; // time(delta, change)
+
+  		if (Tf != null) {
+  			Td = Tf - Ti;
+  		}
+  		else if (final.timeChange != null) {
+  			Tf = final.time = Ti + final.timeChange;
+  			Td = final.timeChange;
+  		}
+  		else { return null; }
+
+  		var Vi = initial.velocity, // velocity(initial)
+  	        Vf = final.velocity, // velocity(final)
+  	        Vd = null, // velocity(delta, change)
+  	        Va = null; // velocity(average)
+
+  		if (Vf != null) {
+  			Vd = Vf - Vi;
+  		}
+
+  		var Pi = initial.position, // position(initial)
+  	        Pf = final.position, // position(final)
+  	        Pd; // position(delta, change)
+
+  		if (Pf != null) {
+  			Pd = Pf - Pi;
+  		}
+
+  		var A = null;
+  		// A = Vd / Td
+
+  		if (Pd == null) {
+  			if (Vd != null) {
+  				if (Td != null) {
+  					A = initial.acceleration = Vd / Td;
+  					Va = (Vi + Vf) / 2;
+  					Pf = final.position = Pi + (Va * Td);
+  				}
+  			}
+  		}
+
+  		return A;
+  	}
+
+  	function atTime(initial, time) {
+  		time = +time;
+
+  		// A = Vd / Td
+  		// 
+
+  		var A = initial.acceleration;
+
+  		var Ti = initial.time,
+  	        Tf = time,
+  	        Td = Tf - Ti;
+
+  		var Vi = initial.velocity,
+  	        Vf = Vi + (A * Td),
+  	        Va = (Vi + Vf) / 2;
+
+  		var Pi = initial.position,
+  	        Pf = Pi + (Va * Td);
+
+  		initial.position = Pf;
+  		initial.velocity = Vf;
+  		initial.time = Tf;
+
+  		return Pf;
+  	}
+
+  	var container = document.body.appendChild(document.createElement("DIV"));
+  	container.id = "container";
+
+  	var initial = {
+  		position: 0,
+  		velocity: 0,
+  		acceleration: 0,
+  		time: +new Date()
+  	};
+
+  	function test(initial, target, time) {
+  		var end = initial.time + time;
+
+  		var acceleration = findAcceleration(initial, target);
+  		if (acceleration == null) {
+  			console.error("Could not find acceleration.");
+  		}
+
+  		var dom = document.createElement("SPAN");
+  		container.appendChild(dom);
+
+  		console.log("initial: ", initial);
+  		console.log("target: ", target);
+
+  		// update every frame
+  		var rafID = requestAnimationFrame(function raf() {
+  			// set new position
+
+  			dom.style.left = atTime(initial, new Date()) + "px";
+  			//console.log("initial: ", initial.velocity, initial.position);
+  			// set up next frame
+  			rafID = requestAnimationFrame(raf);
+  		});
+
+  		// cancel update after time elapsed
+  		setTimeout(function () {
+  			// set to final position
+  			dom.style.left = atTime(initial, end) + "px";
+  			console.log("end initial: ", initial.velocity, initial.position);
+  			// stop animation
+  			cancelAnimationFrame(rafID);
+  		}, time);
+  	}
+
+  	//test(
+  	//    { position: 0, velocity: 0.5, acceleration: 0, time: +new Date() }, // initial
+  	//    {position: 500, timeChange: 1 * 1000 }, // target
+  	//    1 // experiment time
+  	//);
+  	//test(initial, { velocity: (60 * 1000) / (60 * 60 * 1000), timeChange: 3000 }, 3000);
+  	test(
+  	    { position: 0, velocity: 0, acceleration: 1 / 1000, time: new Date() },
+  	    {}, //{ position: 500, velocity: (60 * 1000) / (60 * 60 * 1000) },
+  	    1000
+  	);
+		</script>
+    </body>
+</html>

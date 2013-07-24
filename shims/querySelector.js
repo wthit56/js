@@ -21,6 +21,28 @@ if (!String.prototype.unescape) {
 	})();
 }
 
+if (!Array.prototype.forEach) {
+	Array.prototype.forEach = function (callback, context) {
+		if (context === undefined) { context = window; }
+		var i = 0, l = this.length;
+		while (i < l) {
+			callback.call(context, this[i], i, this);
+			i++;
+		}
+	};
+}
+if (!Array.prototype.some) {
+	Array.prototype.some = function (callback, context) {
+		if (context === undefined) { context = window; }
+		var i = 0, l = this.length;
+		while (i < l) {
+			if (callback.call(context, this[i], i, this) === true) { return true; }
+			i++;
+		}
+
+		return false;
+	};
+}
 if (!Array.prototype.map) {
 	Array.prototype.map = function (callback) {
 		var mapped = new Array(this.length);
@@ -48,10 +70,16 @@ if (!Array.prototype.filter) {
 	};
 }
 
+if (!NodeList.prototype.filter) {
+	NodeList.prototype.filter = function (check) {
+		return Array.prototype.filter.call(this, check);
+	};
+}
+
 if (!RegExp.prototype.forEach) {
 	RegExp.prototype.forEach = (function (global) {
-		return function (input, callback) {
-			var found, lastIndex = this.lastIndex = 0;
+		return function (input, callback, some) {
+			var found, result, lastIndex = this.lastIndex = 0;
 
 			while (true) {
 				found = this.exec(input);
@@ -63,9 +91,12 @@ if (!RegExp.prototype.forEach) {
 				}
 				lastIndex = this.lastIndex;
 
-				found.splice(found.length, 0, found.index, input);
-				callback.apply(global, found);
+				found.push(found.index, input);
+				var result = callback.apply(global, found);
+				if (some && (result === true)) { return true; }
 			}
+
+			if (some) { return false; }
 		}
 	})(this);
 }
@@ -76,19 +107,31 @@ if (!String.prototype.forEachMatch) {
 }
 
 if (!RegExp.prototype.map) {
-	RegExp.prototype.map = (function () {
-		return function (input, mapping) {
+	RegExp.prototype.map = function (input, mapping) {
 			var returnValue = [];
 			this.forEach(input, function () {
 				returnValue.push(mapping.apply(this, arguments));
 			});
 			return returnValue;
 		};
-	})();
 }
 if (!String.prototype.mapMatches) {
 	String.prototype.mapMatches = function (regex, mapping) {
 		return regex.map(this, mapping);
+	};
+}
+
+if (!RegExp.prototype.some) {
+	String.prototype.some = (function () {
+		return function (input, check) {
+			return this.forEach(input, check, true);
+		}
+	})();
+}
+
+if (!String.prototype.someMatches) {
+	String.prototype.someMatches = function (regex, check) {
+		return regex.some(this, check);
 	};
 }
 
@@ -112,7 +155,10 @@ var qsa = (function () {
 	var findSelectors = /((?:[^'",]*(?:(["'])(?:(?:\\|(?!\2))[\W\w])*\2)?)+)(?:,\s*|$)/g;
 	var found, lastIndex;
 	var returnValue;
-	function qsa(selectors) {
+
+	var first;
+	function qsa(selectors, getFirst) {
+		first = !!getFirst;
 		findSelectors.forEach(selectors, selector);
 		var localReturn = returnValue;
 		returnValue = undefined;
@@ -121,12 +167,125 @@ var qsa = (function () {
 
 	var selector = (function () {
 		var findElements = /((?:[^'"\s+~>]*(?:(["'])(?:(?:\\|(?!\2))[\W\w])*\2)?)+)/g;
-		var found, lastIndex;
 
-		function selector(match, selector) {
-			console.group("parsing selector: " + selector);
-			findElements.map(selector, element);
+		var selector = selectorHandler = function selector(match, selector, from) {
+			if (!(selector instanceof Array)) {
+				selector = findElements.map(selector, element);
+			}
+
+			console.group("parsing selector: " + selector.map(function (e) { return e.original }).join(" "));
+
+			var i = selector.length - 1, check;
+			// find last id
+			if (!from) {
+				var base;
+				while (i >= 0) {
+					check = selector[i];
+					if (check.id) {
+						base = document.getElementById(check.id);
+
+						if (base && check(base) && checkUp(selector, i, base)) {
+							if (i < selector.length - 1) {
+								return selectorHandler(null, selector.slice(i + 1), base);
+							}
+							else {
+								return base;
+							}
+						}
+						else {
+							return null;
+						}
+					}
+					i--;
+				}
+			}
+
+			if (!from) { from = document; }
+			var list;
+			i = selector.length - 1;
+			var lastUsed = null, newList;
+			while (i >= 0) {
+				check = selector[i];
+				if (check.hasName) {
+					console.log("name: " + check.hasName);
+					newList = getShorterList(list, from.getElementsByName(check.hasName));
+					if (newList !== list) {
+						list = newList;
+						lastUsed = i;
+						if (list.length <= 1) { break; }
+					}
+				}
+				if (check.classes.length) {
+					check.classes.some(function (className) {
+						console.log("class: " + className);
+						newList = getShorterList(list, from.getElementsByName(className));
+						if (newList !== list) {
+							list = newList;
+							lastUsed = i;
+							if (list.length <= 1) { return true; }
+						}
+					});
+					if (list.length <= 1) { break; }
+				}
+				if (check.tag) {
+					console.log("tagName: " + check.tag);
+					newList = getShorterList(list, from.getElementsByTagName(check.tag));
+					if (newList !== list) {
+						list = newList;
+						lastUsed = i;
+						if (list.length <= 0) { break; }
+					}
+				}g
+
+				i--;
+			}
+
+			if (!list) { return null; }
+			else {
+				newList = null;
+				list = list.filter(function (node) {
+					return (
+						selector[lastUsed](node) &&
+						checkUp(selector, lastUsed, node, from)
+					);
+				});
+
+
+				if (lastUsed === selector.length - 1) {
+					console.groupEnd();
+					return list;
+				}
+			}
+
 			console.groupEnd();
+			return null;
+		};
+
+		function getShorterList(listA, listB) {
+			return (listA && (!listB || (listA.length < listB.length)))
+				? listA : listB;
+		}
+
+		var checkUp = function (selector, from, element, to) {
+			if (!to) { to = document; }
+
+			// TODO: relation selector
+
+			var check;
+
+			while (true) {
+				from--;
+				if (from <= 0) { break; }
+
+				check = selector[from];
+				while (element) {
+					element = element.parentNode;
+					if (!element || (element === to)) { return false; }
+					if (check(element)) { break; }
+				}
+			}
+
+			return true;
 		};
 
 		var element = (function () {
@@ -156,10 +315,8 @@ var qsa = (function () {
 					this.tag = this.name = this.id = null;
 					this.needsHash = this.needsChildAt = this.needsOftypeAt = null;
 
-					this.classes.length = 0;
-					for (var key in this.classes.dictionary) {
-						delete this.classes.dictionary[key];
-					}
+					this.classes = [];
+					this.classes.dictionary = {};
 
 					this.attrs.length = 0;
 					for (var key in this.attrs.dictionary) {
@@ -178,64 +335,64 @@ var qsa = (function () {
 			build.attrs.dictionary = {};
 			build.classedAttrs.dictionary = {}; build.classedAttrs.classed = true;
 
-			function element(match, element) {
-				console.group("parsing element: " + element);
+			var cache = {};
 
-				element = findParts.map(element, createPartCheck);
+			function element(match, element) {
+				if (cache[element]) { return cache[element]; }
+
+				var built = findParts.map(element, createPartCheck);
 				if (build.failed) {
 					throw new SyntaxError("Query '" + element + "' not a valid selector.");
 				}
 
-				var func = "";
-				if (build.classes.length) {
-					func += "var className = ' ' + this.className + ' ';\n\n";
-				}
-				if (build.attrs.length) {
-					func += "var attrs = {\n\t" + build.attrs.map(mapAttrs).join(",\n\t") + "\n};\n\n";
-				}
-				if (build.classedAttrs.length) {
-					func += "var classedAttrs = {\n" + build.classedAttrs.map(mapAttrs).join(",\n\t") + "\n};\n\n";
-				}
-				if (build.needsHash) {
-					func += "" +
+				built = new Function(
+					"self",
+					((build.classes.length) ?
+						 "var className = ' ' + this.className + ' ';\n\n" : "") +
+					((build.attrs.length) ?
+						 "var attrs = {\n\t" + build.attrs.map(mapAttrs).join(",\n\t") + "\n};\n\n" : "") +
+					((build.classedAttrs.length) ?
+						 "var classedAttrs = {\n" + build.classedAttrs.map(mapAttrs).join(",\n\t") + "\n};\n\n" : "") +
+					((build.needsHash) ?
 						"var hash = window.location.hash;\n" +
-						"if(hash){ hash = hash.substring(1); }" +
-					"\n\n";
-				}
-
-				func += "" +
+						"if(hash){ hash = hash.substring(1); }\n\n" : "") +
 					"return (\n" +
 						"(\n\t" +
-							element.filter(isNotNull).join(") &&\n\t(") +
+							built.filter(isNotNull).join(") &&\n\t(") +
 						")" +
-						(build.pseudo.length ? " &&\n\t(arguments.callee.pseudoCheck.call(this))" : "") +
-					"\n);";
+						(build.pseudo.length ? " &&\n\t(self.pseudoCheck.call(this))" : "") +
+					"\n);"
+				);
+				var wrapped = function (node) {
+					return built.call(node, wrapped);
+				};
+				wrapped.original = element;
 
-				element = new Function(func);
 				if (build.pseudo.length) {
 					var pseudos = build.pseudo;
-					element.pseudoCheck = function () {
+					wrapped.pseudoCheck = function () {
 						return pseudoCheck.apply(this, pseudos);
 					};
 				}
 				if (build.needsChildAt) {
-					element.isChildAt = isChildAt;
+					wrapped.isChildAt = isChildAt;
 				}
 				if (build.needsOfTypeAt) {
-					element.isOfTypeAt = isOfTypeAt;
+					wrapped.isOfTypeAt = isOfTypeAt;
 				}
 
-				console.log(JSON.stringify(build, null, "	"));
+				//console.log(JSON.stringify(build, null, "	"));
 
-				element.tag = build.tag;
-				element.name = build.name;
-				element.id = build.id;
-				element.classes = build.classes; delete element.classes.dictionary;
+				wrapped.tag = build.tag;
+				wrapped.hasName = build.name;
+				wrapped.id = build.id;
+				wrapped.classes = build.classes; delete wrapped.classes.dictionary;
 
 				func = ""; build.reset();
 				console.groupEnd();
 
-				return element;
+				cache[element] = wrapped;
+				return wrapped;
 			}
 			function isOfTypeAt(n) {
 				var parent = this.parentNode;
@@ -423,7 +580,9 @@ var qsa = (function () {
 										case "input":
 											return "((this.type === 'radio') || (this.type === 'checkbox')) && (this.checked)";
 											break;
-										default: build.failed = true;
+										default:
+											build.failed = true;
+											return;
 									}
 								}
 								else {
@@ -445,40 +604,53 @@ var qsa = (function () {
 
 							case "first-child":
 								build.needsChildAt = true;
-								return "arguments.callee.isChildAt.call(this, 0)";
+								return "self.isChildAt.call(this, 0)";
 							case "last-child":
 								build.needsChildAt = true;
-								return "arguments.callee.isChildAt.call(this, -1)";
+								return "self.isChildAt.call(this, -1)";
 							case "nth-child":
 								pseudoValue = parseInt(pseudoValue);
 								if (isNaN(pseudoValue) || (pseudoValue < 0)) { build.failed = true; return; }
 								build.needsChildAt = true;
-								return "arguments.callee.isChildAt.call(this, " + pseudoValue + ")";
+								return "self.isChildAt.call(this, " + pseudoValue + ")";
 							case "nth-last-child":
 								pseudoValue = parseInt(pseudoValue);
 								if (isNaN(pseudoValue) || (pseudoValue < 1)) { build.failed = true; return; }
 								build.needsChildAt = true;
-								return "arguments.callee.isChildAt.call(this, -" + pseudoValue + ")";
+								return "self.isChildAt.call(this, -" + pseudoValue + ")";
 
 							case "first-of-type":
 								build.needsOfTypeAt = true;
-								return "arguments.callee.isOfTypeAt.call(this, 0)";
+								return "self.isOfTypeAt.call(this, 0)";
 							case "last-of-type":
 								build.needsOfTypeAt = true;
-								return "arguments.callee.isOfTypeAt.call(this, -1)";
+								return "self.isOfTypeAt.call(this, -1)";
 							case "nth-of-type":
 								pseudoValue = parseInt(pseudoValue);
 								if (isNaN(pseudoValue) || (pseudoValue < 0)) { build.failed = true; return; }
 								build.needsOfTypeAt = true;
-								return "arguments.callee.isOfTypeAt.call(this, " + pseudoValue + ")";
+								return "self.isOfTypeAt.call(this, " + pseudoValue + ")";
 							case "nth-last-of-type":
 								pseudoValue = parseInt(pseudoValue);
 								if (isNaN(pseudoValue) || (pseudoValue < 1)) { build.failed = true; return; }
 								build.needsOfTypeAt = true;
-								return "arguments.callee.isOfTypeAt.call(this, -" + pseudoValue + ")";
+								return "self.isOfTypeAt.call(this, -" + pseudoValue + ")";
+
+							case "root":
+								if ((build.tag != null) && (build.tag !== "html")) {
+									build.failed = true;
+									return;
+								}
+								else {
+									build.tag = "html";
+									return "this.tagName === 'html'";
+								}
+
+							default:
+								build.failed = true;
+								return;
 						}
 					}
-					throw new SyntaxError("Query '" + match + "' not a valid selector.");
 				}
 				else if (named) {
 					var namedStr = named.escape();
@@ -489,7 +661,6 @@ var qsa = (function () {
 							return "this.id === '" + namedStr + "'";
 						case ".":
 							if (!build.classes.dictionary[named]) {
-								console.log("class: " + named);
 								build.classes.push(named);
 								build.classes.dictionary[named] = true;
 								return "className.indexOf(' " + namedStr + " ') !== -1";
@@ -506,10 +677,13 @@ var qsa = (function () {
 			return element;
 		})();
 
-		var check = window.check = element(null, "div#id.class[attr][attr=''][attr-complete=value][ attr-lang = 'lang-'][attr-spaced~=class][attr-lang|=lang][attr-spaced^=starts-with][attr-spaced$=ends-with][attr-spaced*=contains][attr-single='quote\"'][attr-double=\"quote'\"][attr-square='bracket]']:first-child:first-of-type");
-		//debugger;
+		//console.log(
+		//	element(null, "div#id.class[attr][attr=''][attr-complete=value][ attr-lang = 'lang-'][attr-spaced~=class][attr-lang|=lang][attr-spaced^=starts-with][attr-spaced$=ends-with][attr-spaced*=contains][attr-single='quote\"'][attr-double=\"quote'\"][attr-square='bracket]']:first-child:first-of-type")
+		//		.call(document.getElementsByTagName("DIV")[0])
+		//);
+
 		console.log(
-			check.call(document.getElementsByTagName("DIV")[0])
+			selector(null, "body div#id p span")
 		);
 
 		return selector;
