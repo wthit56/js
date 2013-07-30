@@ -104,7 +104,7 @@ var sides = (function () {
 		context.restore();
 	}
 
-	console.log(sides);
+	//console.log(sides);
 
 	context.fillStyle = "rgba(0,0,0,0.1)";
 	context.globalCompositeOperation = "destination-over";
@@ -229,7 +229,7 @@ var Hex = (function () {
 		else {
 			var rotation = analog.base + (Math.atan2(e.pageY - centre.y, e.pageX - centre.x) - analog.from);
 
-			console.log(rotation * (180 / Math.PI));
+			//console.log(rotation * (180 / Math.PI));
 
 			controlling.HTML.Canvas.style.WebkitTransform = "rotate(" + rotation + "rad)";
 			controlling.rotation = rotation;
