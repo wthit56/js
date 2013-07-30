@@ -4,7 +4,7 @@ document.head.appendChild(document.createElement("STYLE")).innerHTML = "\
 		.hex span {\
 			position:absolute; left:0; right:0; top:0; bottom:0;\
 			margin:auto; width:86%; height:86%; border-radius:50%;\
-			background-color:rgba(255,255,255,0.5);\
+			/*background-color:rgba(255,255,255,0.5);*/\
 		}\
 ";
 
@@ -71,7 +71,7 @@ var sides = (function () {
 
 	var canvas = document.createElement("CANVAS");
 	var context = canvas.getContext("2d");
-	document.body.appendChild(canvas);
+	//document.body.appendChild(canvas);
 
 	canvas.width = maxSidesWidth;
 	canvas.height = (6 / maxSidesWide) * sideHeightRounded;
@@ -104,7 +104,7 @@ var sides = (function () {
 		context.restore();
 	}
 
-	console.log(sides);
+	//console.log(sides);
 
 	context.fillStyle = "rgba(0,0,0,0.1)";
 	context.globalCompositeOperation = "destination-over";
@@ -229,7 +229,7 @@ var Hex = (function () {
 		else {
 			var rotation = analog.base + (Math.atan2(e.pageY - centre.y, e.pageX - centre.x) - analog.from);
 
-			console.log(rotation * (180 / Math.PI));
+			//console.log(rotation * (180 / Math.PI));
 
 			controlling.HTML.Canvas.style.WebkitTransform = "rotate(" + rotation + "rad)";
 			controlling.rotation = rotation;
