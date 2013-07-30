@@ -1,1 +1,0 @@
-"javascript:" + encodeURIComponent("(function(){var u=window.location.href;window.open('http://isup.me/'+u.substring(u.indexOf('//')+2));void(0);})()");
