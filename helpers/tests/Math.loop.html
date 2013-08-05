@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+        <script src="../console.testValue.js" type="text/javascript"></script>
+		<script src="../Math.loop.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	function test(value, from, to, expected) {
+		console.testValue(
+  	        Math.loop(value, from, to), expected,
+  	        "Looped " + value + " between " + from + " and " + to + " === {result}", "(should be " + expected + ")"
+  	    );
+  	}
+
+  	test(3, 0, 10, 3);
+  	test(-13, 0, 10, 7);
+  	test(-13, -5, 5, -3);
+  	test(-50, 10, 100, 40);
+  	test(13, -5, 5, 3);
+		</script>
+    </body>
+</html>

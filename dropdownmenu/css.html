@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Custom Dropdown Menu</title>
+		<meta http-equiv='content-type' content='text/html; charset=utf-8' />
+		<style type="text/css">
+body {margin:0;}
+			
+#wrap {float:left; width:100%; background-color:#4093E6; margin-top:70px; min-width:400px;} /* change min-width so that items will never wrap */
+#navList {
+	color:#FFFFFF; margin:70px 0 0 0; padding:0; height:35px;
+	border:solid #3376B8; border-width:1px 3px; margin:0; padding:0 25px; list-style:none;
+	font-family:helvetica, arial, sans-serif;
+}
+	#navList .navItem {
+		position:relative; float:left; margin:0 25px;
+		z-index:1;
+	}
+  		#navList .navItem .menuTitle {
+			font-size:18px; font-weight:400; line-height:35px; color:inherit;
+			display:block; text-decoration:none;
+		}
+		#navList .navItem .menuList {
+			position:absolute; display:none; width:200px; padding:0 0 10px 0;
+			background-color:#FFFFFF; list-style:none;
+			border-radius:0 0 10px 10px; border:1px solid #3376B8; border-bottom-width:3px;
+		}
+			#navList .navItem .menuList .contentLink {
+				display:block; padding:5px 20px; text-decoration:none;
+				color:#3376B8;
+			}
+			#navList .navItem .menuList .contentLink:hover {text-decoration:underline;}
+#navList .navItem:hover .menuList {display:block; z-index:2;}
+		</style>
+	</head>
+	<body>
+<div id='wrap'>
+	<ul id="navList">
+		<li class="navItem">
+			<a href="#" class="menuTitle">Work</a>
+			<ul class="menuList">
+				<li class="menuItem"><a class="contentLink" href="#">Work 1</a></li>
+				<li class="menuItem"><a class="contentLink" href="#">Work 2</a></li>
+			</ul>
+		</li>
+		<li class="navItem">
+			<a href="#" class="menuTitle">Personal</a>
+			<ul class="menuList">
+				<li class="menuItem"><a class="contentLink" href="#">Personal 1</a></li>
+				<li class="menuItem"><a class="contentLink" href="#">Personal 2</a></li>
+			</ul>
+		</li>
+		<li class="navItem">
+			<a href="#" class="menuTitle">Affiliations</a>
+			<ul class="menuList">
+				<li class="menuItem"><a class="contentLink" href="#">Affiliations 1</a></li>
+				<li class="menuItem"><a class="contentLink" href="#">Affiliations 2</a></li>
+			</ul>
+		</li>
+	</ul>
+</div>
+	</body>
+</html>

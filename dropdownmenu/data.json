@@ -1,0 +1,26 @@
+{
+	"menulist":[
+		{
+			"name":"Work",
+			"content":{
+				"li01":"Work01",
+				"li02":"Work02"
+			}
+		},
+		{
+			"name":"Personal",
+			"content":{
+				"li01":"Personal01",
+				"li02":"Personal02"
+			}
+		},
+		{
+			"name":"Affiliations",
+			"content":{
+				"li01":"Affiliations01",
+				"li02":"Affiliations02",
+				"li03":"Affiliations03"
+			}
+		}
+	]
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+        <script type="text/javascript">
+			function createPerson(sIdentity) {
+				var oPerson = new Function("self", "console.log(self.identity)");
+				oPerson.identity = sIdentity;
+
+				return function () {
+					oPerson(oPerson);
+				};
+			}
+
+			var john = createPerson("John Smith");
+
+			john();
+		</script>
+    </body>
+</html>
+
+
+<!--
+@pincopalla00 Would this work?
+
+function createPerson(sIdentity) {
+  var oPerson = new Function("self", "console.log(self.identity)");
+  oPerson.identity = sIdentity;
+
+  return function () {
+    oPerson(oPerson);
+  };
+}
+-->

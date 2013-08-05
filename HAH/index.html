@@ -4,8 +4,65 @@
 	<head>
 		<meta charset="utf-8" />
 		<title>HAH</title>
+		<link href="HAH.css" type="text/css" rel="stylesheet" />
 	</head>
 	<body>
-        <script src="HAH.js" type="text/javascript"></script>
+        <script src="/shims/raf-caf.js" type="text/javascript"></script>
+		<script src="/shims/scrollWheel.js" type="text/javascript"></script>
+		<script src="/shims/on.js" type="text/javascript"></script>
+		<script src="/helpers/console.testValue.js" type="text/javascript"></script>
+		<script src="/helpers/Math.loop.js" type="text/javascript"></script>
+		<script src="/helpers/Math.round.js" type="text/javascript"></script>
+		<script src="HAH.js" type="text/javascript"></script>
+		<script type="text/javascript">
+
+  	var deg_rad = Math.PI / 180;
+  	var rad_deg = 180 / Math.PI;
+  	var deg360_rad = 360 * deg_rad;
+  	var deg6th_rad = 360 / 6 * deg_rad;
+
+  	if (false) {
+  		console.group("snapRotation tests");
+
+  		var test = function (degrees, expected) {
+  			console.testValue(
+  	            Math.loop(Math.round(Hex.snapRotation(degrees * deg_rad) * rad_deg), 0, 360), expected,
+  	            "Snapped " + degrees + " to {result}", "(should be " + expected + ")"
+  	        );
+  		}
+
+  		test(0, 0); test(5, 0); test(-5, 0); test(360 - 5, 0);
+  		test(59, 60); test(60, 60); test(61, 60); test(-59, 360 - 60);
+
+  		console.groupEnd();
+  	}
+
+  	if (false) {
+  		console.group("findShift tests");
+
+  		var test = function (angle, expected) {
+  			console.testValue(
+  	            Hex.findShift(angle * deg_rad), expected,
+  	            angle + " degrees creates a shift of {result}",
+  	            "(should be " + expected + ")"
+  	        );
+  		}
+
+  		test(60, 1);
+  		test(360 - 60, 5);
+  		test(-10, 6);
+
+  		console.groupEnd();
+  	}
+
+  	var hex = new Hex();
+  	document.body.appendChild(hex.HTML);
+
+  	requestAnimationFrame(function raf() {
+  		hex.render();
+
+  		requestAnimationFrame(raf);
+  	});
+		</script>
 	</body>
 </html>
