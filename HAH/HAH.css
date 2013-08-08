@@ -2,7 +2,7 @@
 body {font-size:250px;}
 
 .hex {width:0; height:0; margin:0.5em; float:left;}
-	.hex .side {
+	.hex .side, .hex .side .invalid {
 		position:absolute;
 		display:block; margin-left:-0.25em;
 		-webkit-transform-origin:0.25em 0;
@@ -10,6 +10,8 @@ body {font-size:250px;}
 			border-color:transparent;
 			border-width:0px 0.25em 0.4330127018922193233818615853764680917357013134526em 0.25em;
 	}
+		.hex .side .invalid {border-bottom-color:rgba(255,0,0,0.5); opacity:0;}
+
 		.hex .side .mark {
 			position:absolute; bottom:-0.4330127018922193233818615853764680917357013134526em; width:0.5em; left:-0.25em;
 			text-align:center;
