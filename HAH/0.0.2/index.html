@@ -54,12 +54,53 @@
   		console.groupEnd();
   	}
 
-  	var game = new Game(3, 5, 150);
-  	document.body.appendChild(game.HTML);
-  	game.findCentres();
+  	var Board = (function () {
+  		function Board(width, height, radius) {
+  			var HTML = this.HTML = document.createElement("DIV");
+  			HTML.style.fontSize = radius + "px";
+  			HTML.className = "board";
+
+  			var hexes = this.hexes = [];
+  			var row, even;
+  			for (var h = 0; h < height; h++) {
+  				even = ((h + 1) % 2 === 0);
+
+  				row = HTML.appendChild(document.createElement("DIV"));
+  				row.className = "row" + (even ? " even" : "");
+
+  				for (var w = even ? 0 : 1; w < width; w++) {
+  					var hex = new Hex();
+  					hexes.push(hex);
+  					row.appendChild(hex.HTML);
+  				}
+  			}
+  		}
+  		Board.prototype = {
+  			HTML: null,
+
+  			hexes: null,
+  			render: function () {
+  				for (var i = 0, l = this.hexes.length; i < l; i++) {
+  					this.hexes[i].render();
+  				}
+  			},
+
+  			findCentres: function () {
+  				for (var i = 0, l = this.hexes.length; i < l; i++) {
+  					this.hexes[i].centre.find();
+  				}
+  			}
+  		};
+
+  		return Board;
+  	})();
+
+  	var board = new Board(3, 5, 150);
+  	document.body.appendChild(board.HTML);
+  	board.findCentres();
 
   	requestAnimationFrame(function raf() {
-  		game.render();
+  		board.render();
 
   		requestAnimationFrame(raf);
   	});
