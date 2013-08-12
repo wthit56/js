@@ -1,0 +1,28 @@
+.board {font-size:250px; /* radius:250px */ padding:0.5em;}
+
+.row {margin:-0.5em 0.25em; white-space:nowrap;}
+	.row.even {margin:-0.75em -0.5em;}
+
+.hex {width:0; height:0; margin:0.5em; margin-right:1em; display:inline-block; position:relative;}
+	.hex .side, .hex .side .invalid {
+		position:absolute;
+		display:block; margin-left:-0.25em;
+		-webkit-transform-origin:0.25em 0;
+		border:solid;
+			border-color:transparent;
+			border-width:0px 0.25em 0.4330127018922193233818615853764680917357013134526em 0.25em;
+	}
+		.hex .side .invalid {border-bottom-color:rgba(255,0,0,0.5); opacity:0;}
+
+		.hex .side .mark-position {
+			position:absolute; bottom:-0.4330127018922193233818615853764680917357013134526em; width:0.5em; left:-0.25em;
+			text-align:center;
+		}
+			.hex .side .mark-position .mark {font-size:20%; display:block;}
+
+		.hex .side.A {border-bottom-color:hsl(0,100%,80%);}
+		.hex .side.B {border-bottom-color:hsl(50,100%,80%);}
+		.hex .side.C {border-bottom-color:hsl(100,100%,80%);}
+		.hex .side.D {border-bottom-color:hsl(150,100%,80%);}
+		.hex .side.E {border-bottom-color:hsl(200,100%,80%);}
+		.hex .side.F {border-bottom-color:hsl(250,100%,80%);}
