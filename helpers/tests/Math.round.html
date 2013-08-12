@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Math.round, with precision</title>
+    </head>
+    <body>
+        <script src="../Math.round.js" type="text/javascript"></script>
+		<script src="../console.testValue.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	function test(value, precision, expected) {
+  		console.testValue(
+  	        Math.round(value, precision), expected,
+  	        "Rounded " + value + " with precision " + precision + " to {result}",
+  	        "(should be " + expected + ")"
+  	    );
+  	}
+
+  	test(13, 10, 10);
+  	test(14, 13, 13);
+  	test(16, -5, 15);
+	test(15, 10, 20);
+		</script>
+    </body>
+</html>

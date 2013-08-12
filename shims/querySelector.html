@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+    <body>
+		<div id="id" class="class" attr attr-complete="value" attr-lang="lang-" attr-spaced="starts-with class -contains- ends-with" attr-single="quote&quot;" attr-double="quote'" attr-square="bracket]">
+			<p><span></span></p>
+			<span></span>
+			<p></p><p></p>
+		</div>
+		<div><span attr></span><p></p><code class="classy"><found></found><div class="classy"><found class="classy"></found></div></code></div>
+
+        <script src="querySelector.js" type="text/javascript"></script>
+		<script type="text/javascript">
+
+  	function test(selector) {
+  		console.group(selector);
+  		{
+  			console.log("document.querySelectorAll: ", document.querySelectorAll(selector));
+  			console.log(qsa(selector));
+  		}
+  		console.groupEnd();
+  	}
+
+  	//test("body div#id.class[attr][attr=''][attr-complete=value][ attr-complete = 'value'][attr-spaced~=class][attr-lang|=lang][attr-spaced^=starts-with][attr-spaced$=ends-with][attr-spaced*=contains][attr-single='quote\"'][attr-double=\"quote'\"][attr-square='bracket]']:not(a) + div span ~ code > found, body #not-id");
+  	//test(".class");
+		</script>
+    </body>
+</html>
