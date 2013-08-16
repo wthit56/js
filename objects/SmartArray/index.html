@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>SmartArray</title>
+    </head>
+    <body>
+        <script src="SmartArray.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	function Logger(value) {
+  		this.value = value;
+  	}
+  	var proto = Logger.prototype;
+  	proto.on = function (type) {
+  		console.log(this.value, arguments);
+  	}
+  	proto.toString = function () {
+  		return "" + this.value;
+  	};
+
+  	var _1 = new Logger(1),
+  	    _2 = new Logger(2),
+  	    _3 = new Logger(3),
+  	    _4 = new Logger(4),
+  	    _5 = new Logger(5),
+  	    _6 = new Logger(6),
+  	    _7 = new Logger(7),
+  	    _8 = new Logger(8),
+  	    _9 = new Logger(9),
+  	    _10 = new Logger(10);
+
+  	var errors = true;
+  	function testValue(value, expected, message) {
+  		if (value instanceof Function) {
+  			console.group(message);
+
+  			if (!errors) {
+  				try {
+  					value = value();
+  				}
+  				catch (error) {
+  					console.error(error.message, error);
+  				}
+  			}
+  			else {
+  				value = value();
+  			}
+
+  			if (expected instanceof Function) {
+  				if (!errors) {
+  					try {
+  						expected = expected(value);
+  					}
+  					catch (error) {
+  						console.error(Error.message, error);
+  					}
+  				}
+  				else {
+  					expected = expected(value);
+  				}
+
+  				if (!expected) {
+  					console.error("(incorrect value)");
+  				}
+
+  				console.groupEnd();
+  				return;
+  			}
+
+  			if (value !== expected) {
+  				console.error("(should be " + JSON.stringify(expected) + ", but was " + JSON.stringify(value) + ")");
+  			}
+
+  			console.groupEnd();
+  			return;
+  		}
+
+  		var success = (value === expected);
+  		(success ? console.log : console.error).call(console,
+  	        message +
+  	        (success ? "" : " (should be " + JSON.stringify(expected) + ", but was " + JSON.stringify(value) + ")")
+  	    );
+  	}
+
+  	var sa = new SmartArray(_1, _2, _3);
+  	testValue(function () { return sa.length(); }, 3, ".length() correct from initialization");
+  	testValue(function () { return sa.get(0); }, _1, ".get(index)");
+  	testValue(function () { return sa.get(3); }, undefined, ".get(index > .length)");
+  	testValue(function () { return sa.get(-1); }, undefined, ".get(index < 0)");
+  	testValue(function () { return sa.set(10, _4); }, _4, ".set(index, newValue)");
+  	testValue(function () { return sa.length(); }, 11, ".length() changed by .set()");
+  	testValue(function () { return sa.push(_5); }, 12, ".push(value) returns new length");
+  	testValue(function () { return sa.push(_6, _7); }, 14, ".push(values...) returns new length");
+  	testValue(function () { return sa.length(); }, 14, ".length() correct after .push()es");
+  	testValue(function () { return sa.splice(11, 2); }, function (value) {
+  		return (
+  	        (value instanceof Array) &&
+  	        (value.length == 2) &&
+  	        (value[0] === _5) && (value[1] === _6)
+  	    );
+  	}, ".splice(index, howMany) returns oldValues");
+  	testValue(function () { return sa.length(); }, 12, ".length() correct after .splice(index, howMany)");
+  	testValue(function () { return sa.splice(1, 2, _8, _9, _10); }, function (value) {
+  		return (
+  	        (value instanceof Array) &&
+  	        (value.length == 2) &&
+  	        (value[0] === _2) && (value[1] === _3)
+  	    );
+  	}, ".splice(index, howMany, values...) returns oldValues");
+  	testValue(function () { return sa.splice(3, {}); }, function (value) {
+  		return (
+  	        (value instanceof Array) &&
+  	        (value.length === 0)
+  	    );
+  	}, ".splice(index, non-number howMany) is ignored");
+  	testValue(function () { return sa.splice(3); }, function (value) {
+  		return (
+  	        (value instanceof Array) &&
+  	        (value.length === 10)
+  	    );
+  	}, ".splice(index) returns all subsequent items");
+  	testValue(sa.length(), 3, ".splice(index) removed all subsequent items");
+		</script>
+    </body>
+</html>
