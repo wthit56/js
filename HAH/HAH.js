@@ -9,16 +9,22 @@ var Game = (function () {
 				topLeft = -width,
 				topRight = -(width - 1);
 
+			var widthLong = (width % 2);
+			widthLong = (width - widthLong) / 2 + ((widthLong > 0) ? 1 : 0);
+
+			var heightLong = (height % 2);
+			heightLong = (height - heightLong) * 2 + ((heightLong > 0) ? 1 : 0);
+
 			var hexes = this.hexes = [];
 			var row, even
 			var i = 0;
-			for (var h = 0; h < height; h++) {
+			for (var h = 0; h < heightLong; h++) {
 				even = ((h + 1) % 2 === 0);
 
 				row = HTML.appendChild(document.createElement("DIV"));
 				row.className = "row" + (even ? " even" : "");
 
-				for (var w = even ? 0 : 1; w < width; w++) {
+				for (var w = even ? 0 : 1; w < widthLong; w++) {
 					var hex = new Hex();
 					var linked;
 
@@ -77,6 +83,8 @@ var Game = (function () {
 
 		var handlers = {
 			scroll: function (e) {
+				e.stopPropagation();
+				e.preventDefault();
 				this.input.scroll.value += scrollWheel.get(e) * ((e.pageX - this.centre.x) < 0 ? -1 : 1);
 			}
 		};

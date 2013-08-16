@@ -1,7 +1,7 @@
 .board {font-size:250px; /* radius:250px */ padding:0.5em;}
 
 .row {margin:-0.5em 0.25em; white-space:nowrap;}
-	.row.even {margin:-0.75em -0.5em;}
+	.row.even {margin:-0.83em -0.5em;}
 
 .hex {width:0; height:0; margin:0.5em; margin-right:1em; display:inline-block; position:relative;}
 	.hex .side, .hex .side .invalid {
