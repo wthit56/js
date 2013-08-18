@@ -1,174 +1,237 @@
-var Hex = (function () {
-	if (!Math.round.precision) { throw new ReferenceError("Math.round doesn't have precision."); }
+var Game = (function () {
+	// board creation variables
+	var row; // current row element
+	var even; // true when current row is even
+	var h; // hex count
+	var initialX; // initial x value for current row
+	var x, y; // current x and y board position
+	var left; // is first hex in current row
+	var newHex;
 
-	var deg_rad = Math.PI / 180;
-	var rad_deg = 180 / Math.PI;
-	var deg360_rad = 360 * deg_rad;
-	var deg6th_rad = 360 / 6 * deg_rad;
-
-	var handlers = {
-		scroll: function (e) {
-			this.input.scroll.value += scrollWheel.get(e) * ((e.pageX - this.centre.x) < 0 ? -1 : 1);
-		}
-	};
-
-	var marks = "ABCDEF";
-	var side, sides, sidesTaken = [];
-	function Hex() {
+	function Game(width, height) {
+		// game container element
 		var HTML = this.HTML = document.createElement("DIV");
-		HTML.className = "hex";
+		HTML.className = "game";
 
-		this.shift = 0;
-		this.rotation = 0;
+		// board
+		var board = this.HTML.board = HTML.appendChild(document.createElement("DIV"));
+		board.className = "board";
+		board.style.width = width + "em";
+		board.style.height = (height - 0.5) + "em";
 
-		var THIS = this;
+		// find width of wide row
+		var widthMod = (width % 2),
+			widest = ((width - widthMod) / 2) + 1;
 
-		var scroll = function (e) { return handlers.scroll.call(THIS, e); };
-		scroll.value = 0;
-		scrollWheel.add(HTML, scroll);
+		// find number of rows
+		var heightMod = (height % 2),
+			rows = ((height - heightMod) * 2) + (heightMod ? 1 : 0);
 
-		this.input = {
-			scroll: scroll
-		};
+		console.log(widest, rows);
 
-		sides = this.sides = new Array(6);
-		sides.render = Hex.prototype.sides.render;
-		sidesTaken.length = 6;
-		for (var i = 0; i < 6; i++) {
-			while (true) {
-				side = (Math.random() * 6) | 0;
-				if (sidesTaken[side] !== true) { break; }
+		var hexes = this.hexes = []; // stores all hexes
+		// hex board navigation
+		var up = (widest * -2) + 1,
+			topLeft = -widest,
+			topRight = -widest + 1;
+		var otherHex; // stores "other" hex for linking
+
+		console.log(topLeft, up, topRight);
+
+		// set initial values for board creation
+		h = 0, y = 0;
+		// for every row
+		while (y < rows) {
+			even = (((y + 1) % 2) === 0); // true when row is even
+
+			// row element
+			row = board.appendChild(document.createElement("DIV"));
+			// even rows will have "even" class
+			// the first row will have "first" class
+			row.className = "row" + (even ? " even" : "") + ((y === 0) ? " first" : "");
+
+			// set initial values for hex creation on the current row
+			left = true; // current hex is first on row
+			initialX = x = ((even && widthMod) ? 0 : 1); // there will be one less hex on this row
+			// when row and width are even
+
+			// for every hex on this row
+			while (x < widest) {
+				// create new hex
+				newHex = new Hex(this);
+
+				// link adjacent hexes
+				// top left
+				if ((x > initialX) && (y > 0)) {
+					otherHex = hexes[h + topLeft]; // find other hex
+					if (otherHex) { // hex found
+						newHex.adjacent[5] = otherHex; // link new to adjacent
+						otherHex.adjacent[2] = newHex; // link adjacent to new
+					}
+				}
+				if (y > 0) {
+					// top
+					otherHex = hexes[h + up]; // find other hex
+					if (otherHex) {
+						newHex.adjacent[0] = otherHex; // link new to adjacent
+						otherHex.adjacent[3] = newHex; // link adjacent to new
+					}
+				}
+				if (x < widest - 1) {
+					// top right
+					otherHex = hexes[h + topRight]; // find other hex
+					if (otherHex) {
+						newHex.adjacent[1] = otherHex; // link new to adjacent
+						otherHex.adjacent[4] = newHex; // link adjacent to new
+					} 
+				}
+
+				if (left) {
+					newHex.HTML.className += " left";
+					left = false;
+				}
+				row.appendChild(newHex.HTML);
+				hexes.push(newHex);
+
+				h++;
+				x++;
 			}
 
-			sidesTaken[side] = true;
-
-			side = new Side(THIS, marks[side], i);
-			sides[i] = side;
-
-			HTML.appendChild(side.HTML);
+			y++;
 		}
-		sidesTaken.length = 0;
-		sides.render();
-		sides = null;
 
-		this.centre = {
-			Hex: THIS,
-			x: 0, y: 0,
-			find: Hex.prototype.centre.find
-		};
+		newHex = otherHex = null;
+
+		board.appendChild(document.createElement("BR"));
 	}
-	Hex.prototype = {
-		shift: 0, rotation: 0,
-		input: { scroll: null },
-		check: function () { },
-
-		sides: {
-			render: function () {
-				this[0].render();
-				this[1].render();
-				this[2].render();
-				this[3].render();
-				this[4].render();
-				this[5].render();
-			}
-		},
-		getSide: function (shift) {
-			return this.sides[Math.loop(shift - this.shift, 0, 6)];
-		},
-
-		centre: {
-			Hex: null,
-			x: 0, y: 0,
-			find: function () {
-				this.x = this.Hex.HTML.offsetLeft;
-				this.y = this.Hex.HTML.offsetTop;
-			}
-		},
+	Game.prototype = {
+		HTML: null,
 
 		render: function () {
-			var input = this.input;
+			var time = +new Date();
 
-			var rotation = this.rotation;
+			var hexes = this.hexes, hex;
+			var i = 0, l = hexes.length;
+			while (i < l) {
+				hex = hexes[i];
+				if (hex.dirty) {
+					hex.render();
+				}
 
-			var dirty = false;
-
-			var scroll = input.scroll.value;
-			if (scroll != 0) {
-				shift = this.shift + ((scroll / 3) | 0);
-				shift = this.shift = (((shift % 6) + 6) % 6);
-
-				rotation = this.rotation = shift * deg6th_rad;
-				input.scroll.value = scroll % 3;
-
-				dirty = true;
-			}
-
-			if (dirty) {
-				dirty = false;
-
-				this.sides.render();
-
-				this.HTML.style.WebkitTransform = "rotate(" + rotation + "rad)";
+				i++;
 			}
 		}
 	};
 
-	Hex.snapRotation = function (radians) {
-		return Math.round(Math.loop(radians, 0, deg360_rad), deg6th_rad);
-	};
-	Hex.findShift = function (radians) {
-		return Math.round(Math.loop(radians, 0, deg360_rad) / deg6th_rad);
-	};
+	var Hex = (function () {
+		var marks = new String("ABCDEF");
+		marks.taken = [];
 
-	var Side = (function () {
-		var template = (function () {
-			var template = document.createElement("SPAN");
-			template.className = "side";
+		var side = (function () {
+			var side = document.createElement("SPAN");
+			side.className = "side";
 
-			var invalid = template.appendChild(document.createElement("SPAN"));
-			invalid.className = "invalid";
+			side.appendChild(document.createElement("SPAN")).className = "invalid";
 
-			var mark = template.appendChild(document.createElement("SPAN"));
-			mark.className = "mark-position";
-			mark.appendChild(document.createElement("SPAN")).className = "mark";
+			var markPosition = side.appendChild(document.createElement("SPAN"));
+			markPosition.className = "mark-position";
 
-			return template;
+			markPosition.appendChild(document.createElement("SPAN")).className = "mark";
+
+			side.clone = function (mark) {
+				var newSide = this.cloneNode(true);
+
+				newSide.mark = mark;
+				newSide.className = "side " + mark;
+				newSide.childNodes[1].childNodes[0].innerHTML = mark;
+
+				newSide.invalid = newSide.childNodes[0];
+
+				return newSide;
+			};
+
+			return side;
 		})();
 
-		function Side(hex, mark, shift) {
-			this.Hex = hex;
+		function Hex(game) {
+			this.Game = game;
 
-			var HTML = this.HTML = template.cloneNode(true);
-			HTML.className += " " + mark;
-			HTML.invalid = HTML.childNodes[0];
-			HTML.childNodes[1].childNodes[0].innerText = mark;
-			HTML.style.WebkitTransform = "rotate(" + (180 + (shift * 60)) + "deg)";
+			var HTML = this.HTML = document.createElement("DIV");
+			HTML.className = "hex";
+			HTML.Hex = this;
 
-			this.mark = mark;
-			this.shift = shift;
+			var THIS = this;
+
+			var sides = this.sides = new Array(6);
+			sides.Hex = this;
+			sides.get = getShifted;
+
+			var adjacent = this.adjacent = [];
+			adjacent.Hex = this;
+			adjacent.get = getShifted;
+
+			var taken = marks.taken;
+			taken.length = 6;
+			var s = 0, taken = marks.taken;
+			while (s < 6) {
+				var markIndex = (marks.length * Math.random()) | 0;
+				if (taken[markIndex] !== true) {
+					var newSide = sides[s] = side.clone(marks[markIndex]);
+					newSide.style.WebkitTransform = "rotate(" + (180 + (s * 60)) + "deg)";
+					HTML.appendChild(newSide);
+
+					taken[markIndex] = true;
+					s++;
+				}
+			}
+			taken.length = 0;
+
+			this.dirty = true;
 		}
-		Side.prototype = {
-			Hex: null,
-			mark: null, shift: null,
-			render: function () {
-				if (this.mark === "C") {
-					console.log(this.Hex.shift, this.shift, Math.loop(this.Hex.shift + this.shift, 0, 6));
-				}
+		Hex.prototype = {
+			Game: null, // parent Game
 
-				var opacity = ((this.mark === "C") && (Math.loop(this.Hex.shift + this.shift, 0, 6) === 0))
-					? 1 : 0;
-
-				var invalidStyle = this.HTML.invalid.style;
-				if (invalidStyle.opacity != opacity) {
-					invalidStyle.opacity = opacity;
-				}
+			shift: 0,
+			adjacent: { // []
+				Hex: null, // containing Hex
+				get: getShifted
+			},
+			sides: { // []
+				Hex: null, // containing Hex
+				get: getShifted
 			},
 
-			HTML: null
+			dirty: true,
+			render: function (time) {
+				if (!this.dirty) { return; }
+
+				updateSide.call(this, 0);
+				updateSide.call(this, 1);
+				updateSide.call(this, 2);
+				updateSide.call(this, 3);
+				updateSide.call(this, 4);
+				updateSide.call(this, 5);
+			}
 		};
 
-		return Side;
+		function getShifted(index) {
+			return this[Math.loop(this.Hex.shift + index, 0, 6)];
+		}
+		function updateSide(index) {
+			var adjacent = this.adjacent.get(index);
+			if (adjacent) {
+				var side = this.sides.get(index);
+				var adjacentSide = adjacent.sides.get(index + 3);
+				var colour = ((side.mark === adjacentSide.mark) ? "red" : null);
+				var style = side.style;
+				if (style.borderBottomColor != colour) {
+					style.borderBottomColor = colour;
+				}
+			}
+		}
+
+		return Hex;
 	})();
 
-	return Hex;
+	return Game;
 })();
