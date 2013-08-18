@@ -1,32 +1,91 @@
 var Game = (function () {
+	// board creation variables
+	var row; // current row element
+	var even; // true when current row is even
+	var h; // hex count
+	var initialX; // initial x value for current row
+	var x, y; // current x and y board position
+	var left; // is first hex in current row
+	var newHex;
+
 	function Game(width, height) {
+		// game container element
 		var HTML = this.HTML = document.createElement("DIV");
 		HTML.className = "game";
 
+		// board
 		var board = this.HTML.board = HTML.appendChild(document.createElement("DIV"));
 		board.className = "board";
+		board.style.width = width + "em";
+		board.style.height = (height - 0.5) + "em";
 
+		// find width of wide row
 		var widthMod = (width % 2),
-			evenWidth = ((width - widthMod) / 2) + (widthMod ? 1 : 0);
+			widest = ((width - widthMod) / 2) + 1;
 
+		// find number of rows
 		var heightMod = (height % 2),
 			rows = ((height - heightMod) * 2) + (heightMod ? 1 : 0);
 
-		console.log(evenWidth, rows);
+		console.log(widest, rows);
 
-		var hexes = this.hexes = [];
+		var hexes = this.hexes = []; // stores all hexes
+		// hex board navigation
+		var up = (widest * -2) + 1,
+			topLeft = -widest,
+			topRight = -widest + 1;
+		var otherHex; // stores "other" hex for linking
 
-		var x, y = 0, left = false;
+		console.log(topLeft, up, topRight);
+
+		// set initial values for board creation
+		h = 0, y = 0;
+		// for every row
 		while (y < rows) {
-			var even = (((y + 1) % 2) === 0);
+			even = (((y + 1) % 2) === 0); // true when row is even
 
-			var row = board.appendChild(document.createElement("DIV"));
+			// row element
+			row = board.appendChild(document.createElement("DIV"));
+			// even rows will have "even" class
+			// the first row will have "first" class
 			row.className = "row" + (even ? " even" : "") + ((y === 0) ? " first" : "");
 
-			left = true;
-			x = (even ? 0 : 1);
-			while (x < evenWidth) {
-				var newHex = new Hex(this);
+			// set initial values for hex creation on the current row
+			left = true; // current hex is first on row
+			initialX = x = ((even && widthMod) ? 0 : 1); // there will be one less hex on this row
+			// when row and width are even
+
+			// for every hex on this row
+			while (x < widest) {
+				// create new hex
+				newHex = new Hex(this);
+
+				// link adjacent hexes
+				// top left
+				if ((x > initialX) && (y > 0)) {
+					otherHex = hexes[h + topLeft]; // find other hex
+					if (otherHex) { // hex found
+						newHex.adjacent[5] = otherHex; // link new to adjacent
+						otherHex.adjacent[2] = newHex; // link adjacent to new
+					}
+				}
+				if (y > 0) {
+					// top
+					otherHex = hexes[h + up]; // find other hex
+					if (otherHex) {
+						newHex.adjacent[0] = otherHex; // link new to adjacent
+						otherHex.adjacent[3] = newHex; // link adjacent to new
+					}
+				}
+				if (x < widest - 1) {
+					// top right
+					otherHex = hexes[h + topRight]; // find other hex
+					if (otherHex) {
+						newHex.adjacent[1] = otherHex; // link new to adjacent
+						otherHex.adjacent[4] = newHex; // link adjacent to new
+					} 
+				}
+
 				if (left) {
 					newHex.HTML.className += " left";
 					left = false;
@@ -34,16 +93,34 @@ var Game = (function () {
 				row.appendChild(newHex.HTML);
 				hexes.push(newHex);
 
+				h++;
 				x++;
 			}
 
 			y++;
 		}
 
+		newHex = otherHex = null;
+
 		board.appendChild(document.createElement("BR"));
 	}
 	Game.prototype = {
-		HTML: null
+		HTML: null,
+
+		render: function () {
+			var time = +new Date();
+
+			var hexes = this.hexes, hex;
+			var i = 0, l = hexes.length;
+			while (i < l) {
+				hex = hexes[i];
+				if (hex.dirty) {
+					hex.render();
+				}
+
+				i++;
+			}
+		}
 	};
 
 	var Hex = (function () {
@@ -81,17 +158,21 @@ var Game = (function () {
 
 			var HTML = this.HTML = document.createElement("DIV");
 			HTML.className = "hex";
+			HTML.Hex = this;
 
 			var THIS = this;
 
 			var sides = this.sides = new Array(6);
-			sides.get = function (index) {
-				return Hex.prototype.sides.get.call(THIS, index);
-			};
+			sides.Hex = this;
+			sides.get = getShifted;
+
+			var adjacent = this.adjacent = [];
+			adjacent.Hex = this;
+			adjacent.get = getShifted;
 
 			var taken = marks.taken;
 			taken.length = 6;
-			var s = 0;
+			var s = 0, taken = marks.taken;
 			while (s < 6) {
 				var markIndex = (marks.length * Math.random()) | 0;
 				if (taken[markIndex] !== true) {
@@ -104,16 +185,50 @@ var Game = (function () {
 				}
 			}
 			taken.length = 0;
+
+			this.dirty = true;
 		}
 		Hex.prototype = {
-			shift: 0,
+			Game: null, // parent Game
 
+			shift: 0,
+			adjacent: { // []
+				Hex: null, // containing Hex
+				get: getShifted
+			},
 			sides: { // []
-				get: function (index) {
-					return this.sides[Math.loop(this.shift + index, 0, 6)];
-				}
+				Hex: null, // containing Hex
+				get: getShifted
+			},
+
+			dirty: true,
+			render: function (time) {
+				if (!this.dirty) { return; }
+
+				updateSide.call(this, 0);
+				updateSide.call(this, 1);
+				updateSide.call(this, 2);
+				updateSide.call(this, 3);
+				updateSide.call(this, 4);
+				updateSide.call(this, 5);
 			}
 		};
+
+		function getShifted(index) {
+			return this[Math.loop(this.Hex.shift + index, 0, 6)];
+		}
+		function updateSide(index) {
+			var adjacent = this.adjacent.get(index);
+			if (adjacent) {
+				var side = this.sides.get(index);
+				var adjacentSide = adjacent.sides.get(index + 3);
+				var colour = ((side.mark === adjacentSide.mark) ? "red" : null);
+				var style = side.style;
+				if (style.borderBottomColor != colour) {
+					style.borderBottomColor = colour;
+				}
+			}
+		}
 
 		return Hex;
 	})();

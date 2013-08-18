@@ -1,15 +1,23 @@
 .game {}
 
-.board {font-size:150px; line-height:0;}
+.board {
+	font-size:150px; line-height:0; border-radius:0.03em;
+	position:absolute; left:0; right:0; top:0; bottom:0; margin:auto;
+	padding:0.35em 0.1em; background-color:#eee;
+}
+	.board br {clear:both;}
 
 .row {
-	height:0; margin:0.25em 0; padding:0 0.75em;
+	height:0; margin:0.25em 0; padding:0 1em;
 	white-space:nowrap; float:left; clear:both;
 }
 	.row.first {}
 	.row.even {padding:0;}
 
-.hex {width:0; height:0; padding:0.5em; display:inline-block; position:relative;}
+.hex {
+	width:0; height:0; padding:0.5em;
+	display:inline-block; position:relative;
+}
 	.hex .side, .hex .side .invalid {
 		position:absolute;
 		display:block; margin:0 -0.25em;
@@ -18,13 +26,14 @@
 			border-color:transparent;
 			border-width:0px 0.25em 0.4330127018922193233818615853764680917357013134526em 0.25em;
 	}
-		.hex .side .invalid {border-bottom-color:rgba(255,0,0,0.5); opacity:0;}
+		.hex .side .invalid {border-bottom-color:rgba(255,0,0,0.75); opacity:0;}
 
 		.hex .side .mark-position {
 			position:absolute; bottom:-0.4330127018922193233818615853764680917357013134526em; width:0.5em; left:-0.25em;
 			text-align:center; line-height:normal;
 		}
-			.hex .side .mark-position .mark {font-size:20%; display:block;}
+			.hex .side .mark-position .mark {font-size:20%; display:block; font-family:monospace;
+}
 
 		.hex .side.A {border-bottom-color:hsl(0,100%,80%);}
 		.hex .side.B {border-bottom-color:hsl(50,100%,80%);}
@@ -33,5 +42,5 @@
 		.hex .side.E {border-bottom-color:hsl(200,100%,80%);}
 		.hex .side.F {border-bottom-color:hsl(250,100%,80%);}
 
-	.row .hex {margin-left:0.5em; margin-top:-0.5em;}
+	.row .hex {margin-left:1em; margin-top:-0.5em;}
 		.row .hex.left {margin-left:0;}
