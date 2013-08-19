@@ -1,0 +1,53 @@
+body {font-size:100px;}
+
+.die {line-height:0; height:1em; width:1em; position:relative; display:inline-block; margin:0.1em;}
+
+	.die .pip {
+		font-family:Courier New, monospace; font-size:0.5em; line-height:0; width:0;
+		position:absolute; display:block; margin:0.048em 0 0 -0.305em; display:none;
+	}
+		.die .pip.topLeft {left:25%; top:25%;}
+		.die .pip.topRight {left:75%; top:25%;}
+		.die .pip.middleLeft {left:25%; top:50%;}
+		.die .pip.middle {left:50%; top:50%;}
+		.die .pip.middleRight {left:75%; top:50%;}
+		.die .pip.bottomLeft {left:25%; top:75%;}
+		.die .pip.bottomRight {left:75%; top:75%;}
+
+/*
+		.die._2D._1 .pip.topLeft, .die._2D._1 .pip.topRight,
+			.die._2D._1 .pip.middleLeft, .die._2D._1 .pip.middle, .die._2D._1 .pip.middleRight,
+			.die._2D._1 .pip.bottomLeft, .die._2D._1 .pip.bottomRight {display:block;}
+*/
+
+		/* padding: 0.35em */
+		.die ._1 .pip.middle {display:block; font-size:1em; color:red;}
+		.die ._2 .pip.topLeft, .die ._2 .pip.bottomRight {display:block;}
+		.die ._3 .pip.topLeft, .die ._3 .pip.middle,
+			.die ._3 .pip.bottomRight {display:block;}
+		.die ._4 .pip.topLeft, .die ._4 .pip.topRight,
+			.die ._4 .pip.bottomLeft, .die ._4 .pip.bottomRight {display:block;}
+		.die ._5 .pip.topLeft, .die ._5 .pip.topRight, .die ._5 .pip.middle,
+			.die ._5 .pip.bottomLeft, .die ._5 .pip.bottomRight {display:block;}
+		.die ._6 .pip.topLeft, .die ._6 .pip.topRight,
+			.die ._6 .pip.middleLeft, .die ._6 .pip.middleRight,
+			.die ._6 .pip.bottomLeft, .die ._6 .pip.bottomRight {display:block;}
+
+	.die._2D, .die._3D .side {
+		border:0.05em solid black; width:0.9em; height:0.9em;
+		position:relative;
+	}
+
+	.die._3D {-webkit-perspective:800px;}
+		.die._3D .sides {
+			-webkit-transform:translateZ(-0.5em);
+			-webkit-transform-style:preserve-3d; width:100%; height:100%;
+		}
+		.die._3D .side {position:absolute; -webkit-backface-visibility:hidden;}
+
+		.die._3D ._1 {-webkit-transform:translateZ(0.5em);}
+		.die._3D ._2 {-webkit-transform:rotateX(90deg) translateZ(0.5em);}
+		.die._3D ._3 {-webkit-transform:rotateY(90deg) translateZ(0.5em);}
+		.die._3D ._4 {-webkit-transform:rotateX(-90deg) translateZ(0.5em);}
+		.die._3D ._5 {-webkit-transform:rotateY(-90deg) translateZ(0.5em);}
+		.die._3D ._6 {-webkit-transform:rotateX(180deg) translateZ(0.5em);}
