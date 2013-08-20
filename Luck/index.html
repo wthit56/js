@@ -5,18 +5,12 @@
         <meta charset="utf-8" />
         <title>Luck</title>
 		<link href="Dice.css" rel="stylesheet" type="text/css" />
+		<link href="Luck.css" rel="stylesheet" type="text/css" />
+		<script src="../shims/on.js" type="text/javascript"></script>
     </head>
     <body>
-        <script src="Dice.js" type="text/javascript"></script>
-		<script type="text/javascript">
-  	var HTML = document.body;
-  	HTML.appendChild(new Die["3D"]().HTML);
-  	HTML.appendChild(new Die["2D"](1).HTML);
-  	HTML.appendChild(new Die["2D"](2).HTML);
-  	HTML.appendChild(new Die["2D"](3).HTML);
-  	HTML.appendChild(new Die["2D"](4).HTML);
-  	HTML.appendChild(new Die["2D"](5).HTML);
-  	HTML.appendChild(new Die["2D"](6).HTML);
-		</script>
+        <div id="used"></div>
+		<script src="Dice.js" type="text/javascript"></script>
+		<script src="Luck.js" type="text/javascript"></script>
     </body>
 </html>

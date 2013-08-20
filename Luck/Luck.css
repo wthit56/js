@@ -1,0 +1,25 @@
+body {}
+
+.die ._1 .pip.middle {font-size:1em; color:red;}
+.die._3D .sides {-webkit-transition:-webkit-transform 0.5s;}
+
+#used {font-size:25px; line-height:0;}
+	#used .roll {
+		padding:0.1em; margin:0.1em;
+		clear:both; display:inline-block;
+	}
+		#used .roll, #used .roll .die {cursor:pointer;}
+		#used .roll:hover {
+			background-color:#EEEEEE;
+			transition:background-color 0.2s;
+				-webkit-transition:background-color 0.2s;
+		}
+		#used .roll .die {margin:0.1em;}
+		
+		#used .roll.used {
+			opacity:0.3; filter:alpha(opacity=50);
+			transition:opacity 0.5s;
+				-webkit-transition:opacity 0.5s;
+		}
+		#used .roll.used, #used .roll.used .die {cursor:not-allowed;}
+			#used .roll.used:hover {background-color:transparent;}
