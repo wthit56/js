@@ -20,6 +20,7 @@ var Die = (function () {
 
 			var HTML = this.HTML = document.createElement("DIV");
 			HTML.className = className + value;
+			HTML.Dice = this;
 
 			var sides = HTML.appendChild(document.createElement("DIV"));
 			sides.className = "sides";
@@ -68,6 +69,7 @@ var Die = (function () {
 
 			var HTML = this.HTML = document.createElement("DIV");
 			HTML.className = className + value;
+			HTML.Dice = this;
 
 			var display = HTML.display = HTML.appendChild(document.createElement("DIV"));
 			display.className = "_" + value;
