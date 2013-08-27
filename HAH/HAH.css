@@ -3,15 +3,17 @@
 .board {
 	font-size:150px; line-height:0; border-radius:0.03em;
 	position:absolute; left:0; right:0; top:0; bottom:0; margin:auto;
-	padding:0.35em 0.1em; background-color:#eee;
+	/*padding:0.1em; background-color:#eee;*/
 }
 	.board br {clear:both;}
 
+/* 3 x 3 = 410 x 450 */
+
 .row {
-	height:0; margin:0.25em 0; padding:0 1em;
+	height:0; margin:0 0 0.5em 0; padding:0 0 0 0.8660254037844386em;
 	white-space:nowrap; float:left; clear:both;
 }
-	.row.first {}
+	.row.first {margin-top:0.5em;}
 	.row.even {padding:0;}
 
 .hex {
@@ -41,5 +43,5 @@
 		.hex .side.E {border-bottom-color:hsl(250,100%,80%);}
 		.hex .side.F {border-bottom-color:hsl(300,100%,80%);}
 
-	.row .hex {margin-left:1em; margin-top:-0.5em;}
+	.row .hex {margin-left:0.7320508075688772em; margin-top:-0.5em;}
 		.row .hex.left {margin-left:0;}

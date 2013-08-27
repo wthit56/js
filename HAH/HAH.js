@@ -16,8 +16,6 @@ var Game = (function () {
 		// board
 		var board = this.HTML.board = HTML.appendChild(document.createElement("DIV"));
 		board.className = "board";
-		board.style.width = width + "em";
-		board.style.height = (height - 0.5) + "em";
 
 		// find width of wide row
 		var widthMod = (width % 2),
@@ -26,6 +24,10 @@ var Game = (function () {
 		// find number of rows
 		var heightMod = (height % 2),
 			rows = ((height - heightMod) * 2) + (heightMod ? 1 : 0);
+
+		console.log(width, height);
+		board.style.width = (width - (0.1333333333333333 * (widthMod ? 2 : 3))) + "em";
+		board.style.height = (height + (heightMod ? 0 : 0.5)) + "em";
 
 		var hexes = this.hexes = []; // stores all hexes
 		// hex board navigation
@@ -79,7 +81,7 @@ var Game = (function () {
 					if (otherHex) {
 						newHex.adjacent[1] = otherHex; // link new to adjacent
 						otherHex.adjacent[4] = newHex; // link adjacent to new
-					} 
+					}
 				}
 
 				if (left) {
