@@ -32,15 +32,14 @@
 			position:absolute; bottom:-0.4330127018922193233818615853764680917357013134526em; width:0.5em; left:-0.25em;
 			text-align:center; line-height:normal;
 		}
-			.hex .side .mark-position .mark {font-size:20%; display:block; font-family:monospace;
-}
+			.hex .side .mark-position .mark {font-size:20%; display:block; font-family:monospace;}
 
-		.hex .side.A {border-bottom-color:hsl(0,100%,80%);}
-		.hex .side.B {border-bottom-color:hsl(50,100%,80%);}
-		.hex .side.C {border-bottom-color:hsl(100,100%,80%);}
-		.hex .side.D {border-bottom-color:hsl(150,100%,80%);}
-		.hex .side.E {border-bottom-color:hsl(200,100%,80%);}
-		.hex .side.F {border-bottom-color:hsl(250,100%,80%);}
+		.hex .side.A {border-bottom-color:hsl(50,100%,80%);}
+		.hex .side.B {border-bottom-color:hsl(100,100%,80%);}
+		.hex .side.C {border-bottom-color:hsl(150,100%,80%);}
+		.hex .side.D {border-bottom-color:hsl(200,100%,80%);}
+		.hex .side.E {border-bottom-color:hsl(250,100%,80%);}
+		.hex .side.F {border-bottom-color:hsl(300,100%,80%);}
 
 	.row .hex {margin-left:1em; margin-top:-0.5em;}
 		.row .hex.left {margin-left:0;}

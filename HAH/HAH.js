@@ -27,16 +27,12 @@ var Game = (function () {
 		var heightMod = (height % 2),
 			rows = ((height - heightMod) * 2) + (heightMod ? 1 : 0);
 
-		console.log(widest, rows);
-
 		var hexes = this.hexes = []; // stores all hexes
 		// hex board navigation
 		var up = (widest * -2) + 1,
 			topLeft = -widest,
 			topRight = -widest + 1;
 		var otherHex; // stores "other" hex for linking
-
-		console.log(topLeft, up, topRight);
 
 		// set initial values for board creation
 		h = 0, y = 0;
