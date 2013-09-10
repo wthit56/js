@@ -1,17 +1,21 @@
+body {margin:0;}
+
 .game {}
 
 .board {
 	font-size:150px; line-height:0; border-radius:0.03em;
 	position:absolute; left:0; right:0; top:0; bottom:0; margin:auto;
-	padding:0.35em 0.1em; background-color:#eee;
+	/*padding:0.1em; background-color:#eee;*/
 }
 	.board br {clear:both;}
 
+/* 3 x 3 = 410 x 450 */
+
 .row {
-	height:0; margin:0.25em 0; padding:0 1em;
+	height:0; margin:0 0 0.5em 0; padding:0 0 0 0.8660254037844386em;
 	white-space:nowrap; float:left; clear:both;
 }
-	.row.first {}
+	.row.first {margin-top:0.5em;}
 	.row.even {padding:0;}
 
 .hex {
@@ -32,15 +36,14 @@
 			position:absolute; bottom:-0.4330127018922193233818615853764680917357013134526em; width:0.5em; left:-0.25em;
 			text-align:center; line-height:normal;
 		}
-			.hex .side .mark-position .mark {font-size:20%; display:block; font-family:monospace;
-}
+			.hex .side .mark-position .mark {font-size:20%; display:block; font-family:monospace;}
 
-		.hex .side.A {border-bottom-color:hsl(0,100%,80%);}
-		.hex .side.B {border-bottom-color:hsl(50,100%,80%);}
-		.hex .side.C {border-bottom-color:hsl(100,100%,80%);}
-		.hex .side.D {border-bottom-color:hsl(150,100%,80%);}
-		.hex .side.E {border-bottom-color:hsl(200,100%,80%);}
-		.hex .side.F {border-bottom-color:hsl(250,100%,80%);}
+		.hex .side.A {border-bottom-color:hsl(50,100%,80%);}
+		.hex .side.B {border-bottom-color:hsl(100,100%,80%);}
+		.hex .side.C {border-bottom-color:hsl(150,100%,80%);}
+		.hex .side.D {border-bottom-color:hsl(200,100%,80%);}
+		.hex .side.E {border-bottom-color:hsl(250,100%,80%);}
+		.hex .side.F {border-bottom-color:hsl(300,100%,80%);}
 
-	.row .hex {margin-left:1em; margin-top:-0.5em;}
+	.row .hex {margin-left:0.7320508075688772em; margin-top:-0.5em;}
 		.row .hex.left {margin-left:0;}
