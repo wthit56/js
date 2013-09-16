@@ -5,7 +5,7 @@ body {margin:0;}
 .board {
 	font-size:150px; line-height:0; border-radius:0.03em;
 	position:absolute; left:0; right:0; top:0; bottom:0; margin:auto;
-	/*padding:0.1em; background-color:#eee;*/
+	padding:0.25em;
 }
 	.board br {clear:both;}
 
