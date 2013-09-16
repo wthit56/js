@@ -82,7 +82,7 @@ var Game = (function () {
 				if (y > 0) {
 					// top-left
 					if (!even || (x > initialX)) {
-						otherHex = hexes[h + topLeft + (even ? -1 : 0)]; // find other hex
+						otherHex = hexes[h + topLeft + (widthEven && even ? -1 : 0)]; // find other hex
 						if (otherHex) { // hex found
 							newHex.adjacent[5] = otherHex; // link new to adjacent
 							otherHex.adjacent[2] = newHex; // link adjacent to new
