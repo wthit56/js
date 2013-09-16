@@ -3,6 +3,8 @@ if (!Math.random.seed) {
 		var seedValue;
 
 		function random() {
+			// Thanks to Olaf Horstmann fo rthe original algorithm
+			// http://indiegamr.com/generate-repeatable-random-numbers-in-js/
 			seedValue = ((seedValue * 9301) + 49297) % 233280;
 			return (seedValue / 233280);
 		}
