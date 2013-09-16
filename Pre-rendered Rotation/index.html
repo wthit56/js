@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+	</head>
+	<body>
+        <script src="../shims/raf-caf.js" type="text/javascript"></script>
+		<script type="text/javascript">
+  	var render_size = 100;
+  	var canvas_size = ((render_size / 2) / Math.sin(45 * (Math.PI / 180))) * 2;
+
+  	function render(context) {
+  		context.fillStyle = "green"//"hsl(0,0%,33%)";
+  		context.beginPath();
+  		context.moveTo(-0.5, -0.5);
+  		context.lineTo(0.5, -0.5);
+  		context.lineTo(-0.5, 0.5);
+  		context.lineTo(0.5, 0.5);
+  		context.closePath();
+  		context.fill();
+
+  		context.fillStyle = "red"//"hsl(0,0%,66%)";
+  		context.beginPath();
+  		context.moveTo(-0.5, -0.5);
+  		context.lineTo(-0.5, 0.5);
+  		context.lineTo(0.5, -0.5);
+  		context.lineTo(0.5, 0.5);
+  		context.closePath();
+  		context.fill();
+  	}
+
+  	var sprite1 = (function () {
+  		var canvas = document.createElement("canvas");
+  		canvas.width = canvas.height = render_size;
+
+  		var context = canvas.getContext("2d");
+
+  		context.scale(render_size, render_size);
+  		context.translate(0.5, 0.5);
+  		render(context);
+
+  		return canvas;
+  	})();
+
+  	var sprite2 = (function () {
+  		var canvas = document.createElement("canvas");
+  		canvas.width = canvas.height = render_size * 2;
+
+  		var context = canvas.getContext("2d");
+
+  		context.scale(render_size * 2, render_size * 2);
+  		context.translate(0.5, 0.5);
+  		render(context);
+
+  		return canvas;
+  	})();
+
+  	//document.body.appendChild(sprite1);
+  	//document.body.appendChild(sprite2);
+
+  	var rendered = (function () {
+  		var canvas = document.body.appendChild(document.createElement("CANVAS"));
+  		canvas.width = canvas.height = canvas_size;
+
+  		var context = canvas.getContext("2d");
+  		return function (ms) {
+  			context.clearRect(0, 0, canvas.width, canvas.height);
+
+  			context.save();
+
+  			context.translate(canvas_size / 2, canvas_size / 2);
+  			context.scale(render_size, render_size);
+  			context.rotate(1 * (ms / 1000));
+
+  			render(context);
+
+  			context.restore();
+  		}
+  	})();
+
+  	function renderSprite(canvas, context, sprite, ms) {
+  		context.clearRect(0, 0, canvas.width, canvas.height);
+
+  		context.save();
+
+  		context.translate(canvas_size / 2, canvas_size / 2);
+  		context.rotate(1 * (ms / 1000));
+
+  		context.drawImage(
+  	        sprite,
+  	        0, 0, sprite.width, sprite.height,
+  	        -render_size / 2, -render_size / 2, render_size, render_size
+  	    );
+
+  		context.restore();
+  	}
+
+  	var renderSprite1 = (function () {
+  		var canvas = document.body.appendChild(document.createElement("CANVAS"));
+  		canvas.width = canvas.height = canvas_size;
+
+  		var context = canvas.getContext("2d");
+  		return function (ms) {
+  			renderSprite(canvas, context, sprite1, ms);
+  		}
+  	})();
+
+  	var renderSprite2 = (function () {
+  		var canvas = document.body.appendChild(document.createElement("CANVAS"));
+  		canvas.width = canvas.height = canvas_size;
+
+  		var context = canvas.getContext("2d");
+  		return function (ms) {
+  			renderSprite(canvas, context, sprite2, ms);
+  		}
+  	})();
+
+  	var start = +new Date(), now, progress;
+  	requestAnimationFrame(function raf() {
+  		now = +new Date();
+  		progress = now - start;
+
+  		rendered(progress);
+  		renderSprite1(progress);
+		renderSprite2(progress);
+
+  		requestAnimationFrame(raf);
+  	});
+
+		</script>
+	</body>
+</html>
