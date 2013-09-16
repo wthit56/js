@@ -24,7 +24,7 @@
   	if (height && !isNaN(height[1])) { height = parseInt(height[1]); }
   	else { height = 3; }
 
-  	var seed = window.location.href.match(/\?(?:[^&]*&)*seed=([0-9]+(?:\.[0-9]+))(?:&|$)/);
+  	var seed = window.location.href.match(/\?(?:[^&]*&)*seed=([0-9]+(?:\.[0-9]+)?)(?:&|$)/);
   	if (seed) { Math.random.seed(parseFloat(seed[1])); }
 
   	var game = new Game(width, height);

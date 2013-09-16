@@ -19,23 +19,31 @@ var Game = (function () {
 		board.className = "board";
 
 		// find width of wide row
-		var widthMod = (width % 2),
-			widest = ((width - widthMod) / 2) + 1;
+		var widest = (height === 1) ? width : Math.ceil(width / 2);
 
 		// find number of rows
-		var heightMod = (height % 2),
-			rows = ((height - heightMod) * 2) + (heightMod ? 1 : 0);
+		var rows = (height * 2) - 1;
 
 		console.log(width, height);
-		board.style.width = (width - (0.1333333333333333 * (widthMod ? 2 : 3))) + "em";
-		board.style.height = (height + (heightMod ? 0 : 0.5)) + "em";
+		console.log(widest, rows);
 
 		var hexes = this.hexes = []; // stores all hexes
 		// hex board navigation
-		var top = (widest * -2) + 1,
-			topLeft = -widest,
-			topRight = -widest + 1;
+		var top = -(width), topLeft, topRight;
 		var otherHex; // stores "other" hex for linking
+
+		var widthEven = ((width % 2) === 0);
+		var widthHalf = width / 2;
+		if ((width > 2) && widthEven) {
+			topLeft = -widthHalf;
+			topRight = -widthHalf + 1;
+		}
+		else {
+			topLeft = Math.floor(-widthHalf);
+			topRight = Math.ceil(-widthHalf);
+		}
+
+		console.log(topLeft, top, topRight);
 
 		// set initial values for board creation
 		h = 0, y = 0;
@@ -51,7 +59,7 @@ var Game = (function () {
 
 			// set initial values for hex creation on the current row
 			left = true; // current hex is first on row
-			initialX = x = ((even && widthMod) ? 0 : 1); // there will be one less hex on this row
+			initialX = x = (!widthEven && !even) ? 1 : 0; // there will be one less hex on this row
 			// when row and width are even
 
 			// for every hex on this row
@@ -74,7 +82,7 @@ var Game = (function () {
 				if (y > 0) {
 					// top-left
 					if (!even || (x > initialX)) {
-						otherHex = hexes[h + topLeft]; // find other hex
+						otherHex = hexes[h + topLeft + (even ? -1 : 0)]; // find other hex
 						if (otherHex) { // hex found
 							newHex.adjacent[5] = otherHex; // link new to adjacent
 							otherHex.adjacent[2] = newHex; // link adjacent to new
@@ -93,8 +101,8 @@ var Game = (function () {
 					}
 
 					// top-right
-					if (!even || (x < widest - 1)) {
-						otherHex = hexes[h + topRight]; // find other hex
+					if ((widthEven === even) && (x < widest - 1)) {
+						otherHex = hexes[h + topRight + (even ? -1 : 0)]; // find other hex
 						if (otherHex) {
 							newHex.adjacent[1] = otherHex; // link new to adjacent
 							otherHex.adjacent[4] = newHex; // link adjacent to new
@@ -115,7 +123,7 @@ var Game = (function () {
 		board.appendChild(document.createElement("BR"));
 
 		this.telemetry = {
-			Game: this, offset: { x: 0, y: 0 }, fontSize: 150,
+			Game: this, offset: { x: 0, y: 0 }, size: { x: width, y: height }, fontSize: 150,
 			update: Game.prototype.telemetry.update
 		};
 	}
@@ -138,13 +146,23 @@ var Game = (function () {
 		},
 		telemetry: {
 			Game: null, // containing Game object
-			fontSize: 150, offset: { x: 0, y: 0 },
+			fontSize: 150, offset: { x: 0, y: 0 }, size: { x: 0, y: 0 },
 			update: function () {
 				var HTML = this.Game.HTML;
 				HTML.style.width = window.innerWidth + "px";
 				HTML.style.height = window.innerHeight + "px";
 
 				var board = HTML.board;
+				var size = this.size;
+
+				var bw = (size.x - (0.1333333333333333 * ((size.x % 2) ? 2 : 3)));
+				var bh = (size.y + ((size.y % 2) ? 0.5 : 0));
+
+				board.style.fontSize = Math.min(window.innerWidth / (bw+0.5), window.innerHeight / (bh+0.5)) + "px";
+
+				board.style.width = bw + "em";
+				board.style.height = bh + "em";
+
 				this.offset.x = (board.parentNode.offsetWidth - board.offsetWidth) / 2;
 				this.offset.y = (board.parentNode.offsetHeight - board.offsetHeight) / 2;
 			}
