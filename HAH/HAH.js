@@ -155,13 +155,13 @@ var Game = (function () {
 				var board = HTML.board;
 				var size = this.size;
 
-				var bw = (size.x - (0.1333333333333333 * ((size.x % 2) ? 2 : 3)));
-				var bh = (size.y + ((size.y % 2) ? 0.5 : 0));
+				var bw = (size.x - (0.1333333333333333 * ((size.x % 2) ? 2 : 3))),
+					bh = size.y;
 
-				board.style.fontSize = Math.min(window.innerWidth / (bw+0.5), window.innerHeight / (bh+0.5)) + "px";
+				board.style.fontSize = Math.min(window.innerWidth / (bw + 0.5), window.innerHeight / (bh + 0.5)) + "px";
 
 				board.style.width = bw + "em";
-				board.style.height = bh + "em";
+				board.style.height = size.y + "em";
 
 				this.offset.x = (board.parentNode.offsetWidth - board.offsetWidth) / 2;
 				this.offset.y = (board.parentNode.offsetHeight - board.offsetHeight) / 2;
