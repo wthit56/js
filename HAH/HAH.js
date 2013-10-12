@@ -96,9 +96,6 @@ var Game = (function () {
 						else { throw new ReferenceError("No top Hex found to link."); }
 					}
 
-					console.group("top-right");
-					console.log(newHex.HTML);
-					console.log("even:row=" + even + ",width=" + widthEven);
 					// top-right
 					if (/*(widthEven === even) && */(x < widest)) {
 						console.log("finding top-right (" + x + " < " + widest + ")");
@@ -110,7 +107,6 @@ var Game = (function () {
 						}
 						else { throw new ReferenceError("No top-right Hex found to link."); }
 					}
-					console.groupEnd();
 				}
 
 				newHex.randomize();
