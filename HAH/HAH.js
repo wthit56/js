@@ -97,7 +97,7 @@ var Game = (function () {
 					}
 
 					// top-right
-					if (/*(widthEven === even) && */(x < widest)) {
+					if (/*(widthEven === even) && */(x < widest + (even ? -1 : 0))) {
 						console.log("finding top-right (" + x + " < " + widest + ")");
 						otherHex = hexes[h + topRight + (widthEven && even ? -1 : 0)]; // find other hex
 						if (otherHex) {
@@ -265,37 +265,60 @@ var Game = (function () {
 				}
 			},
 
-			randomize: function () {
-				var HTML = this.HTML; HTML.innerHTML = "";
-				var sides = this.sides; sides.length = 0;
-				var remaining = "ABCDEF";
+			randomize: (function () {
+				function matchingSide(s, Hex, remaining) {
+					var adjacent = Hex.adjacent.get(s);
+					if (adjacent) {
+						var mark = adjacent.sides.get(s + 3).mark;
+						if (remaining.indexOf(mark) !== -1) {
+							var newSide = Hex.sides[s] = side.clone(mark);
+							newSide.style.WebkitTransform = "rotate(" + (-180 + (s * 60)) + "deg)";
+							Hex.HTML.appendChild(newSide);
 
-				var s = 0;
-				var markIndex, mark;
-				var adjacent = this.adjacent.get(s + 3);
-				if (adjacent) { adjacent = adjacent.sides.get(s).mark; }
-
-				while (remaining.length > 0) {
-					markIndex = (remaining.length * Math.random()) | 0;
-					mark = remaining.substring(markIndex, markIndex + 1);
-
-					if (adjacent !== mark) {
-						remaining = remaining.substring(0, markIndex) + remaining.substring(markIndex + 1);
-
-						var newSide = sides[s] = side.clone(mark);
-						newSide.style.WebkitTransform = "rotate(" + (-180 + (s * 60)) + "deg)";
-						HTML.appendChild(newSide);
-
-						s++;
-						adjacent = this.adjacent.get(s + 3);
-						if (adjacent) { adjacent = adjacent.sides.get(s).mark; }
+							mark = remaining.indexOf(mark);
+							return remaining.substring(0, mark) + remaining.substring(mark + 1);
+						}
 					}
+
+					return remaining;
 				}
 
+				return function () {
+					var HTML = this.HTML; HTML.innerHTML = "";
+					var sides = this.sides; sides.length = 0;
+					var remaining = "ABCDEF";
 
+					remaining = matchingSide(5, this, remaining);
+					remaining = matchingSide(0, this, remaining);
+					remaining = matchingSide(1, this, remaining);
 
-				this.dirty = true;
-			},
+					var s = 0;
+					var markIndex, mark;
+
+					var adjacent = this.adjacent.get(s + 3);
+					if (adjacent) { adjacent = adjacent.sides.get(s).mark; }
+					while (remaining.length > 0) {
+						while (sides[s]) { s++; }
+
+						markIndex = (remaining.length * Math.random()) | 0;
+						mark = remaining.substring(markIndex, markIndex + 1);
+
+						if (adjacent !== mark) {
+							remaining = remaining.substring(0, markIndex) + remaining.substring(markIndex + 1);
+
+							var newSide = sides[s] = side.clone(mark);
+							newSide.style.WebkitTransform = "rotate(" + (-180 + (s * 60)) + "deg)";
+							HTML.appendChild(newSide);
+
+							s++;
+							adjacent = this.adjacent.get(s + 3);
+							if (adjacent) { adjacent = adjacent.sides.get(s).mark; }
+						}
+					}
+
+					this.dirty = true;
+				};
+			})(),
 
 			dirty: true,
 			render: function (time) {
